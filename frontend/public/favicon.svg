@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&amp;display=swap');
+      .logo-text {
+        font-family: 'Abril Fatface', Georgia, serif;
+        font-style: italic;
+        font-size: 42px;
+        fill: #FFFFFF;
+      }
+      .logo-dot {
+        font-family: 'Abril Fatface', Georgia, serif;
+        font-style: italic;
+        font-size: 42px;
+        fill: #3B82F6;
+      }
+    </style>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1220" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Border / Background -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="2.5" />
+  
+  <!-- Subtle Glow Effect Behind S. -->
+  <circle cx="32" cy="32" r="16" fill="#3B82F6" opacity="0.15" filter="url(#glow)" />
+
+  <!-- S. Monogram in Abril Fatface Italic -->
+  <!-- S letter: adjusted baseline and positioning -->
+  <text x="14" y="46" class="logo-text">S</text>
+  <text x="38" y="46" class="logo-dot">.</text>
+</svg>

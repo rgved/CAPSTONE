@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 70" width="240" height="70">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&amp;family=Inter:wght@600&amp;display=swap');
+      .brand-title {
+        font-family: 'Abril Fatface', Georgia, serif;
+        font-style: italic;
+        font-size: 48px;
+        fill: #F8FAFC;
+      }
+      .brand-dot {
+        font-family: 'Abril Fatface', Georgia, serif;
+        font-style: italic;
+        font-size: 48px;
+        fill: #3B82F6;
+      }
+      .brand-sub {
+        font-family: 'Inter', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.24em;
+        fill: #94A3B8;
+        text-transform: uppercase;
+      }
+    </style>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+  </defs>
+
+  <!-- Icon Mark -->
+  <rect x="5" y="10" width="48" height="48" rx="14" fill="url(#iconBg)" />
+  <rect x="7" y="12" width="44" height="44" rx="12" fill="#0B1220" />
+  <text x="17" y="46" font-family="'Abril Fatface', serif" font-style="italic" font-size="34" fill="#FFFFFF">S</text>
+  <text x="37" y="46" font-family="'Abril Fatface', serif" font-style="italic" font-size="34" fill="#3B82F6">.</text>
+
+  <!-- Wordmark -->
+  <text x="68" y="45" class="brand-title">Sniff</text>
+  <text x="168" y="45" class="brand-dot">.</text>
+  <text x="70" y="58" class="brand-sub">SECURITY RECON</text>
+</svg>
