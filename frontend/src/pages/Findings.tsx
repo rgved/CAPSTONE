@@ -47,7 +47,10 @@ export default function Findings() {
     { label: "File Upload Risks", value: "file_upload_risk" },
     { label: "Security Headers", value: "missing_security_headers" },
     { label: "Admin Panels", value: "admin_surface" },
-    { label: "Sensitive Inputs", value: "sensitive_input" }
+    { label: "Sensitive Inputs", value: "sensitive_input" },
+    { label: "Vulnerable Dependencies", value: "vulnerable_dependency" },
+    { label: "Subresource Integrity", value: "missing_subresource_integrity" },
+    { label: "Verbose Error Leaks", value: "verbose_error_leak" },
   ];
 
   return (
@@ -134,14 +137,20 @@ export default function Findings() {
                   <th className="p-4">Finding ID</th>
                   <th className="p-4">Title & Explainable Reasoning</th>
                   <th className="p-4">Severity</th>
-                  <th className="p-4">Confidence</th>
                   <th className="p-4">Mission</th>
                   <th className="p-4">Date</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1F2937]">
-                {findings.map((f) => (
+                {[...findings]
+                  .sort((a, b) => {
+                    const severityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, informational: 0 };
+                    const weightA = severityOrder[a.severity?.toLowerCase()] ?? 0;
+                    const weightB = severityOrder[b.severity?.toLowerCase()] ?? 0;
+                    return weightB - weightA;
+                  })
+                  .map((f) => (
                   <tr
                     key={f.finding_id}
                     className="hover:bg-[#1F2937]/20 transition-all cursor-pointer group"
@@ -152,7 +161,7 @@ export default function Findings() {
                       <div className="font-semibold text-[#F8FAFC]">{f.title}</div>
                       {f.reasoning && (
                         <div className="text-[11px] text-[#A855F7] line-clamp-1 italic mt-1 flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3 shrink-0" />
+                          <Sparkles className="w-3 mx-0 shrink-0" />
                           <span className="truncate">{f.reasoning}</span>
                         </div>
                       )}
@@ -162,7 +171,6 @@ export default function Findings() {
                         {f.severity}
                       </span>
                     </td>
-                    <td className="p-4 text-[#8B5CF6] font-bold whitespace-nowrap">{(f.confidence * 100).toFixed(0)}%</td>
                     <td className="p-4 font-mono text-[#94A3B8] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <Link to={`/mission/${f.mission}`} className="hover:text-[#3B82F6] hover:underline inline-flex items-center gap-1">
                         {f.mission} <ExternalLink className="w-3 h-3" />
@@ -222,15 +230,15 @@ export default function Findings() {
                 </div>
               </div>
 
-              {/* Categorization & Confidence */}
+              {/* Categorization & Status */}
               <div className="grid grid-cols-2 gap-4 border-t border-b border-[#1F2937] py-4">
                 <div>
                   <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Category</span>
                   <p className="text-xs font-mono font-bold text-[#F8FAFC] mt-1">{selectedFinding.category}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Security Confidence</span>
-                  <p className="text-xs font-bold text-[#8B5CF6] mt-1">{(selectedFinding.confidence * 100).toFixed(0)}%</p>
+                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Classification</span>
+                  <p className="text-xs font-bold text-[#3B82F6] mt-1">Verified Finding</p>
                 </div>
               </div>
 

@@ -38,6 +38,9 @@ _ALLOWED_CATEGORIES: set[str] = {
     "missing_security_headers",
     "admin_surface",
     "sensitive_input",
+    "vulnerable_dependency",
+    "missing_subresource_integrity",
+    "verbose_error_leak",
     "unknown",
 }
 _ALLOWED_SEVERITIES: set[str] = {"informational", "low", "medium", "high"}
@@ -165,9 +168,9 @@ class AnalysisAgent:
                 semantic_context=semantic_context,
             )
             raw_response = self._llm_client.complete(self._build_prompt(evidence_package))
-            analysis = self._parse_llm_response(raw_response)
+            analysis_list = self._parse_llm_response(raw_response)
             route_id = self._parse_optional_int(task.context.get("route_id"))
-            finding = self._build_finding(analysis, feature, route_id)
+            findings = [self._build_finding(analysis, feature, route_id) for analysis in analysis_list]
         except ValueError as exc:
             return self._failure_response(
                 task.task_id,
@@ -182,23 +185,24 @@ class AnalysisAgent:
 
         new_findings: list[dict[str, Any]] = []
         persisted = False
-        if finding.security_confidence >= _FINDING_THRESHOLD:
-            new_findings.append(finding.model_dump())
-            persisted = True
+        for finding in findings:
+            if finding.security_confidence >= _FINDING_THRESHOLD:
+                new_findings.append(finding.model_dump())
+                persisted = True
 
         logger.info(
-            "AnalysisAgent complete - task_id=%s category=%s confidence=%.2f persisted=%s",
+            "AnalysisAgent complete - task_id=%s total_evaluated=%d persisted=%d",
             task.task_id,
-            finding.type,
-            finding.security_confidence,
-            persisted,
+            len(findings),
+            len(new_findings),
         )
         return WorkerResponse(
             status="success",
             worker="analysis",
             task_id=task.task_id,
             data={
-                "analysis": analysis,
+                "analysis": analysis_list[0] if analysis_list else {},
+                "findings": [f.model_dump() for f in findings],
                 "evidence_package": evidence_package,
                 "persisted": persisted,
             },
@@ -266,11 +270,45 @@ class AnalysisAgent:
             if recon_result.inline_scripts:
                 package["inline_scripts"] = [s[:400] for s in recon_result.inline_scripts[:3]]
 
+        if getattr(recon_result, "script_tags", None):
+            package["script_tags"] = recon_result.script_tags[:20]
+        elif recon_result.scripts:
+            package["scripts"] = recon_result.scripts[:20]
+
+        if getattr(recon_result, "error_signatures", None):
+            package["error_signatures"] = recon_result.error_signatures
+
+        if getattr(recon_result, "reflected_parameters", None):
+            package["reflected_parameters"] = recon_result.reflected_parameters
+
         return package
 
-    def _parse_llm_response(self, raw_response: str) -> dict[str, Any]:
+    def _parse_llm_response(self, raw_response: str) -> list[dict[str, Any]]:
         parsed = self._load_json(raw_response)
+        raw_items: list[Any] = []
+        if isinstance(parsed, list):
+            raw_items = parsed
+        elif isinstance(parsed, dict):
+            if "findings" in parsed and isinstance(parsed["findings"], list):
+                raw_items = parsed["findings"]
+            else:
+                raw_items = [parsed]
+        else:
+            raise ValueError("LLM response must be a JSON object or array")
 
+        validated_items: list[dict[str, Any]] = []
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            validated = self._validate_single_finding(item)
+            validated_items.append(validated)
+
+        if not validated_items:
+            raise ValueError("No valid findings parsed from LLM response")
+
+        return validated_items
+
+    def _validate_single_finding(self, parsed: dict[str, Any]) -> dict[str, Any]:
         category = parsed.get("finding_category")
         title = parsed.get("title")
         description = parsed.get("description")

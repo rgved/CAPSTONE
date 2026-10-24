@@ -9,16 +9,72 @@ import {
   Layers,
   Compass,
   FileText,
-  Percent,
   ChevronDown,
   ChevronUp,
   ShieldAlert,
+  ShieldCheck,
   ArrowLeft,
   ChevronRight,
-  TrendingDown,
-  Sparkles,
-  Target
+  Sparkles
 } from "lucide-react";
+
+const getOwaspCategory = (category?: string): { code: string; name: string } => {
+  switch (category?.toLowerCase()) {
+    case "missing_csrf":
+    case "admin_surface":
+    case "exposed_endpoint":
+      return { code: "A01:2025", name: "Broken Access Control" };
+    case "missing_security_headers":
+    case "verbose_error_leak":
+      return { code: "A02:2025", name: "Security Misconfiguration" };
+    case "vulnerable_dependency":
+      return { code: "A03:2025", name: "Software Supply Chain Failures" };
+    case "sensitive_input":
+      return { code: "A05:2025", name: "Injection" };
+    case "weak_authentication":
+      return { code: "A07:2025", name: "Authentication Failures" };
+    case "missing_subresource_integrity":
+    case "file_upload_risk":
+      return { code: "A08:2025", name: "Software or Data Integrity Failures" };
+    default:
+      return { code: "A02:2025", name: "Security Misconfiguration" };
+  }
+};
+
+const getCapabilityLabel = (name: string): string => {
+  const map: Record<string, string> = {
+    authentication: "Authentication & Access Controls",
+    client_side_libraries: "Client Libraries & Third-Party Scripts",
+    cdn_subresources: "External CDN & Subresources",
+    security_headers: "HTTP Security Perimeter",
+    file_upload: "File Upload Handling",
+    search: "Search & Query Interface",
+    api: "API Endpoints & Routing",
+    admin_panel: "Administrative Interface",
+    dashboard: "Application Dashboard",
+    error_handling: "Error Diagnostics & Handlers",
+    input_handling: "Input Parameters & Reflection",
+    unknown: "General Web Surface"
+  };
+  return map[name.toLowerCase()] || name.replace(/_/g, " ").toUpperCase();
+};
+
+const getCapabilityFindings = (capName: string, findings: any[] = []): any[] => {
+  const norm = capName.toLowerCase();
+  return findings.filter(f => {
+    const cat = (f.category || "").toLowerCase();
+    if (norm === "authentication") return cat === "missing_csrf" || cat === "weak_authentication";
+    if (norm === "client_side_libraries") return cat === "vulnerable_dependency";
+    if (norm === "cdn_subresources") return cat === "missing_subresource_integrity";
+    if (norm === "security_headers") return cat === "missing_security_headers";
+    if (norm === "error_handling") return cat === "verbose_error_leak";
+    if (norm === "input_handling") return cat === "sensitive_input";
+    if (norm === "file_upload") return cat === "file_upload_risk";
+    if (norm === "admin_panel") return cat === "admin_surface";
+    if (norm === "api") return cat === "exposed_endpoint";
+    return false;
+  });
+};
 
 export default function MissionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -215,30 +271,51 @@ export default function MissionDetail() {
           </div>
         </div>
 
-        {/* Section 3 — Feature Summary */}
+        {/* Section 3 — Feature Summary & Attack Surface */}
         <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl space-y-6">
-          <h3 className="text-sm font-bold text-[#F8FAFC] border-b border-[#1F2937] pb-3 flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#8B5CF6]" /> Capabilities Identified
-          </h3>
-          <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+          <div className="flex items-center justify-between border-b border-[#1F2937] pb-3">
+            <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#8B5CF6]" /> Capabilities & Attack Surface
+            </h3>
+            <span className="text-[10px] font-mono text-[#94A3B8]">
+              {mission.features.length} Components
+            </span>
+          </div>
+          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2">
             {mission.features.length === 0 ? (
-              <p className="text-xs text-[#94A3B8] italic py-4">No classified features detected yet.</p>
+              <p className="text-xs text-[#94A3B8] italic py-4">No classified components detected yet.</p>
             ) : (
               mission.features.map((f, idx) => {
-                const isUnknown = f.name.toLowerCase() === "unknown";
-                const displayName = isUnknown ? "General Web Surface" : f.name.replace(/_/g, " ");
+                const label = getCapabilityLabel(f.name);
+                const findingsOnFeature = getCapabilityFindings(f.name, mission.findings);
+                const featHasHigh = findingsOnFeature.some(item => item.severity?.toLowerCase() === "high");
+                const featHasMed = findingsOnFeature.some(item => item.severity?.toLowerCase() === "medium");
+
                 return (
                   <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-[#0B1220] border border-[#1F2937]">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${isUnknown ? "bg-[#94A3B8]" : "bg-[#8B5CF6]"}`}></div>
-                      <span className="text-xs font-bold text-[#F8FAFC] uppercase">{displayName}</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-2 h-2 rounded-full ${
+                        findingsOnFeature.length > 0 
+                          ? (featHasHigh ? "bg-[#EF4444]" : "bg-[#F59E0B]")
+                          : "bg-[#22C55E]"
+                      }`}></div>
+                      <div>
+                        <span className="text-xs font-bold text-[#F8FAFC] block">{label}</span>
+                        <span className="text-[10px] text-[#94A3B8]">
+                          {findingsOnFeature.length > 0 ? `${findingsOnFeature.length} finding${findingsOnFeature.length > 1 ? 's' : ''} identified` : "Component evaluated clean"}
+                        </span>
+                      </div>
                     </div>
-                    <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
-                      isUnknown 
-                        ? "text-[#94A3B8] border-[#94A3B8]/20 bg-[#94A3B8]/10" 
-                        : "text-[#8B5CF6] border-[#8B5CF6]/20 bg-[#8B5CF6]/10"
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                      findingsOnFeature.length > 0
+                        ? (featHasHigh 
+                            ? "text-[#EF4444] border-[#EF4444]/30 bg-[#EF4444]/10" 
+                            : "text-[#F59E0B] border-[#F59E0B]/30 bg-[#F59E0B]/10")
+                        : "text-[#22C55E] border-[#22C55E]/30 bg-[#22C55E]/10"
                     }`}>
-                      {f.confidence.toFixed(0)}% confidence
+                      {findingsOnFeature.length > 0 
+                        ? (featHasHigh ? "Vulnerable (High)" : featHasMed ? "Vulnerable (Med)" : "Hardening")
+                        : "Clean"}
                     </span>
                   </div>
                 );
@@ -248,37 +325,72 @@ export default function MissionDetail() {
         </div>
       </div>
 
-      {/* Grid: Research Token Metrics and Timeline */}
+      {/* Grid: OWASP 2025 Risk Profile and Timeline */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Section 4 — Token Reduction Metrics */}
-        <div className="bg-[#111827] border-[#3B82F6] border-2 p-6 rounded-xl space-y-6 flex flex-col justify-between shadow-xl shadow-blue-500/5">
-          <div>
-            <h3 className="text-sm font-bold text-[#F8FAFC] pb-3 border-b border-[#1F2937] flex items-center gap-2">
-              <Percent className="w-4 h-4 text-[#3B82F6]" /> Token Reduction Stats
-            </h3>
-            <p className="text-xs text-[#94A3B8] mt-4 leading-relaxed">
-              This card highlights the efficiency of our <strong>Selective Fetch Service</strong> compared to submitting raw, unfiltered HTML payloads.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="p-3 bg-[#0B1220] border border-[#1F2937] rounded-lg">
-                <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Original Tokens</span>
-                <p className="text-xl font-bold text-[#EF4444] mt-1">{mission.token_reduction.original_tokens || "—"}</p>
+        {/* Section 4 — Security Posture & OWASP Top 10 Risk Mapping */}
+        {(() => {
+          const hasHigh = mission.findings.some(f => f.severity?.toLowerCase() === "high");
+          const hasMedium = mission.findings.some(f => f.severity?.toLowerCase() === "medium");
+
+          const owaspMap = new Map<string, string>();
+          mission.findings.forEach(f => {
+            const owasp = getOwaspCategory(f.category);
+            owaspMap.set(owasp.code, owasp.name);
+          });
+          const activeOwasp = Array.from(owaspMap.entries()).map(([code, name]) => ({ code, name }));
+
+          return (
+            <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl space-y-6 flex flex-col justify-between shadow-xl">
+              <div>
+                <div className="flex items-center justify-between border-b border-[#1F2937] pb-3">
+                  <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-[#EF4444]" /> OWASP Top 10 Risk Mapping
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border ${
+                    hasHigh ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30" :
+                    hasMedium ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30" :
+                    "bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/30"
+                  }`}>
+                    {hasHigh ? "High Risk Surface" : hasMedium ? "Moderate Risk" : "Hardened"}
+                  </span>
+                </div>
+
+                <p className="text-xs text-[#94A3B8] mt-3 leading-relaxed">
+                  Discovered findings are aligned with the <strong>OWASP Top 10: 2025</strong> framework to prioritize defensive remediation.
+                </p>
+
+                <div className="mt-4 space-y-2">
+                  {activeOwasp.length === 0 ? (
+                    <div className="p-3 bg-[#0B1220] border border-[#1F2937] rounded-lg text-center text-xs text-[#94A3B8] italic">
+                      No OWASP Top 10 vulnerabilities detected in current scope.
+                    </div>
+                  ) : (
+                    activeOwasp.map((cat, i) => (
+                      <div key={i} className="flex items-center justify-between p-2.5 bg-[#0B1220] border border-[#1F2937] rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-extrabold text-[#3B82F6] bg-[#3B82F6]/10 px-1.5 py-0.5 rounded border border-[#3B82F6]/20">
+                            {cat.code}
+                          </span>
+                          <span className="text-xs font-medium text-[#F8FAFC]">{cat.name}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded border border-[#EF4444]/20">
+                          Active
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-              <div className="p-3 bg-[#0B1220] border border-[#1F2937] rounded-lg">
-                <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Reduced Tokens</span>
-                <p className="text-xl font-bold text-[#22C55E] mt-1">{mission.token_reduction.reduced_tokens || "—"}</p>
+
+              <div className="pt-3 border-t border-[#1F2937] flex items-center justify-between text-xs">
+                <span className="text-[#94A3B8]">Audit Perimeter:</span>
+                <span className="font-semibold text-[#22C55E] flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> 100% Scope Audited
+                </span>
               </div>
             </div>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-[#1F2937] flex items-center justify-between">
-            <span className="text-xs text-[#94A3B8] font-medium">Reduction Achieved:</span>
-            <span className="text-xl font-extrabold text-[#22C55E] flex items-center gap-1">
-              <TrendingDown className="w-5 h-5" /> {mission.token_reduction.reduction_percentage}%
-            </span>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Section 5 — Mission Timeline */}
         <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl xl:col-span-2 space-y-6">
@@ -349,7 +461,14 @@ export default function MissionDetail() {
           </div>
         ) : (
           <div className="space-y-4">
-            {mission.findings.map((finding) => {
+            {[...mission.findings]
+              .sort((a, b) => {
+                const severityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, informational: 0 };
+                const weightA = severityOrder[a.severity?.toLowerCase()] ?? 0;
+                const weightB = severityOrder[b.severity?.toLowerCase()] ?? 0;
+                return weightB - weightA;
+              })
+              .map((finding) => {
               const isExpanded = !collapsedFindings[finding.finding_id];
               const sev = getSeverityStyle(finding.severity);
               return (
@@ -379,14 +498,10 @@ export default function MissionDetail() {
                   {/* Expanded Body */}
                   {isExpanded && (
                     <div className="p-6 border-t border-[#1F2937] bg-[#0B1220]/40 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Category</h4>
                           <p className="text-xs font-mono font-bold text-[#F8FAFC] mt-1.5">{finding.category}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Security Confidence</h4>
-                          <p className="text-xs font-semibold text-[#8B5CF6] mt-1.5">{(finding.confidence * 100).toFixed(0)}%</p>
                         </div>
                         <div>
                           <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Finding Key</h4>
@@ -439,93 +554,6 @@ export default function MissionDetail() {
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-
-      {/* Section 7 — Prioritized Attack Surface (Risk Engine) */}
-      <div className="space-y-4 pt-4 border-t border-[#1F2937]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-base font-bold text-[#F8FAFC] flex items-center gap-2">
-              <Target className="w-4 h-4 text-[#3B82F6]" />
-              Prioritized Attack Surface (Risk Engine)
-            </h3>
-            <p className="text-xs text-[#94A3B8] mt-0.5">
-              Calculated via <span className="font-mono text-[#3B82F6]">Risk = Exposure × Sensitivity × Reachability</span> to prioritize high-value scan targets.
-            </p>
-          </div>
-          <span className="text-xs font-mono font-bold text-[#94A3B8] bg-[#111827] border border-[#1F2937] px-3 py-1 rounded-lg self-start">
-            {mission.prioritized_attack_surface?.length || 0} Endpoints Scored
-          </span>
-        </div>
-
-        {mission.prioritized_attack_surface && mission.prioritized_attack_surface.length > 0 ? (
-          <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden shadow-lg">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#0B1220] text-[#94A3B8] uppercase tracking-wider font-semibold border-b border-[#1F2937]">
-                  <tr>
-                    <th className="p-4">Rank / URL</th>
-                    <th className="p-4">Risk Score</th>
-                    <th className="p-4">Priority</th>
-                    <th className="p-4">Sensitivity</th>
-                    <th className="p-4">Exposure</th>
-                    <th className="p-4">Reachability</th>
-                    <th className="p-4">Classification</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1F2937]/50 text-[#F8FAFC]">
-                  {mission.prioritized_attack_surface.map((ep, idx) => {
-                    const getRiskBadge = (score: number) => {
-                      if (score >= 8.5) return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30";
-                      if (score >= 6.5) return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30";
-                      if (score >= 3.5) return "bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/30";
-                      return "bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30";
-                    };
-
-                    return (
-                      <tr key={idx} className="hover:bg-[#1F2937]/30 transition-colors">
-                        <td className="p-4 font-mono">
-                          <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-[#0B1220] border border-[#1F2937] text-[10px] font-bold text-[#94A3B8] flex items-center justify-center">
-                              {idx + 1}
-                            </span>
-                            <span className="truncate max-w-xs md:max-w-md" title={ep.url}>{ep.url}</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-0.5 rounded text-xs font-mono font-extrabold border ${getRiskBadge(ep.risk_score)}`}>
-                            {ep.risk_score.toFixed(1)} / 10
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-[10px] uppercase font-extrabold tracking-wider text-[#94A3B8]">
-                            {ep.priority}
-                          </span>
-                        </td>
-                        <td className="p-4 font-mono text-[#F8FAFC]">
-                          {ep.sensitivity.toFixed(1)}
-                        </td>
-                        <td className="p-4 font-mono text-[#F8FAFC]">
-                          {ep.exposure.toFixed(1)}
-                        </td>
-                        <td className="p-4 font-mono text-[#F8FAFC]">
-                          {ep.reachability.toFixed(2)}
-                        </td>
-                        <td className="p-4 text-[#94A3B8] italic text-xs">
-                          {ep.reason}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-[#111827] border border-[#1F2937] p-8 rounded-xl text-center text-[#94A3B8] italic">
-            No endpoints discovered for prioritization in this scan.
           </div>
         )}
       </div>

@@ -70,6 +70,12 @@ class ReportAgent:
         report_id = f"{_REPORT_ID_PREFIX}{self._report_counter:03d}"
         generated_at = datetime.now(timezone.utc)
         severity_breakdown = self._severity_breakdown(findings)
+        severity_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
+        sorted_findings = sorted(
+            findings,
+            key=lambda f: severity_order.get((f.severity or "").lower(), 0),
+            reverse=True,
+        )
         report_findings = [
             ReportFinding(
                 finding_id=finding.finding_id or "",
@@ -81,7 +87,7 @@ class ReportAgent:
                 description=finding.description,
                 reasoning=finding.reasoning,
             )
-            for finding in findings
+            for finding in sorted_findings
         ]
 
         report = SecurityReport(
@@ -134,6 +140,14 @@ class ReportAgent:
             recommendations.append("Restrict administrative functionality with strong authorization checks.")
         if "file_upload_risk" in finding_types:
             recommendations.append("Validate file uploads server-side and restrict allowed file types.")
+        if "vulnerable_dependency" in finding_types:
+            recommendations.append("Upgrade outdated client-side libraries to modern patched releases.")
+        if "missing_subresource_integrity" in finding_types:
+            recommendations.append("Add integrity and crossorigin attributes to external third-party CDN scripts.")
+        if "verbose_error_leak" in finding_types:
+            recommendations.append("Disable verbose debugging and configure generic error pages in production.")
+        if "sensitive_input" in finding_types:
+            recommendations.append("Sanitize and encode all user-controlled inputs before reflection.")
         if not recommendations and features:
             recommendations.append("Review the discovered features for security-sensitive input handling.")
         if not recommendations:

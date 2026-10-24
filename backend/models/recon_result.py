@@ -29,8 +29,11 @@ class ReconResult(BaseModel):
     buttons: list[str] = Field(default_factory=list)
     links: list[str] = Field(default_factory=list)
     scripts: list[str] = Field(default_factory=list)
+    script_tags: list[dict[str, Any]] = Field(default_factory=list)
     inline_scripts: list[str] = Field(default_factory=list)
     meta_tags: list[dict[str, Any]] = Field(default_factory=list)
     headers: dict[str, str] = Field(default_factory=dict)
     status_code: int = 200
     comments: list[str] = Field(default_factory=list)
+    error_signatures: list[str] = Field(default_factory=list)
+    reflected_parameters: list[dict[str, Any]] = Field(default_factory=list)

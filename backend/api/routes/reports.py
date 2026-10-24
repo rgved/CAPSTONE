@@ -42,10 +42,15 @@ def get_report_detail(id: str):
         try:
             report_data = json.loads(row["report_json"])
             if isinstance(report_data, dict) and "findings" in report_data and isinstance(report_data["findings"], list):
+                sev_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
                 for f in report_data["findings"]:
                     if isinstance(f, dict):
                         if not f.get("reasoning"):
                             f["reasoning"] = get_default_reasoning(f.get("category", ""), f.get("description", ""))
+                report_data["findings"].sort(
+                    key=lambda f: sev_order.get((f.get("severity", "") if isinstance(f, dict) else "").lower(), 0),
+                    reverse=True,
+                )
             return report_data
         except Exception as e:
             logger.error(f"Error parsing report JSON: {e}")

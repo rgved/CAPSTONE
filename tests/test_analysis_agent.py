@@ -197,3 +197,90 @@ class TestAnalysisAgent:
         assert "ETag" not in headers
         assert "Keep-Alive" not in headers
 
+    def test_missing_subresource_integrity_finding(self) -> None:
+        client = StubAnalysisClient(
+            """
+            {
+              "finding_category": "missing_subresource_integrity",
+              "title": "External Script Loaded Without Subresource Integrity (SRI)",
+              "description": "Script loaded from CDN without cryptographic integrity attribute.",
+              "reasoning": "External script fetched from CDN without integrity attribute allows tampering if CDN is compromised.",
+              "severity": "low",
+              "confidence": 0.90,
+              "evidence": ["https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"]
+            }
+            """
+        )
+        agent = AnalysisAgent(llm_client=client)
+        ctx = _task_context()
+        ctx["recon_result"]["script_tags"] = [
+            {"src": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js", "integrity": None, "is_external": True}
+        ]
+
+        task = Task(task_id="TASK-013", action="RUN_ANALYSIS", target="https://example.com/login", context=ctx)
+        response = asyncio.run(agent.execute(task))
+
+        assert response.status == "success"
+        assert len(response.new_findings) == 1
+        finding = response.new_findings[0]
+        assert finding["type"] == "missing_subresource_integrity"
+        assert finding["severity"] == "low"
+        assert finding["security_confidence"] == 0.90
+
+    def test_verbose_error_leak_finding(self) -> None:
+        client = StubAnalysisClient(
+            """
+            {
+              "finding_category": "verbose_error_leak",
+              "title": "Verbose Server Error and Stack Trace Disclosure",
+              "description": "500 Internal Server Error returning unhandled exception traceback.",
+              "reasoning": "Verbose error traces leak internal module paths and runtime state.",
+              "severity": "medium",
+              "confidence": 0.95,
+              "evidence": ["Traceback (most recent call last)", "HTTP 500"]
+            }
+            """
+        )
+        agent = AnalysisAgent(llm_client=client)
+        ctx = _task_context()
+        ctx["recon_result"]["status_code"] = 500
+        ctx["recon_result"]["error_signatures"] = ["Traceback (most recent call last)"]
+
+        task = Task(task_id="TASK-014", action="RUN_ANALYSIS", target="https://example.com/error", context=ctx)
+        response = asyncio.run(agent.execute(task))
+
+        assert response.status == "success"
+        assert len(response.new_findings) == 1
+        finding = response.new_findings[0]
+        assert finding["type"] == "verbose_error_leak"
+        assert finding["severity"] == "medium"
+        assert finding["security_confidence"] == 0.95
+
+    def test_vulnerable_dependency_finding(self) -> None:
+        client = StubAnalysisClient(
+            """
+            {
+              "finding_category": "vulnerable_dependency",
+              "title": "Outdated Client Library with Known Vulnerabilities",
+              "description": "Legacy jQuery 1.12.4 referenced with documented XSS CVEs.",
+              "reasoning": "Third-party client library with known public CVEs is embedded directly without security patching.",
+              "severity": "medium",
+              "confidence": 0.88,
+              "evidence": ["jquery-1.12.4.min.js"]
+            }
+            """
+        )
+        agent = AnalysisAgent(llm_client=client)
+        ctx = _task_context()
+        ctx["recon_result"]["scripts"] = ["/js/jquery-1.12.4.min.js"]
+
+        task = Task(task_id="TASK-015", action="RUN_ANALYSIS", target="https://example.com/app", context=ctx)
+        response = asyncio.run(agent.execute(task))
+
+        assert response.status == "success"
+        assert len(response.new_findings) == 1
+        finding = response.new_findings[0]
+        assert finding["type"] == "vulnerable_dependency"
+        assert finding["severity"] == "medium"
+        assert finding["security_confidence"] == 0.88
+

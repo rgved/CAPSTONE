@@ -196,7 +196,10 @@ def _get_recommendation_by_category(category: str) -> str:
         "file_upload_risk": "Enforce server-side file ext validations, upload size constraints, and change filename on save.",
         "missing_security_headers": "Ensure modern security headers (HSTS, CSP, X-Frame-Options, XSS protection) are present.",
         "admin_surface": "Block public routing to administration components, enforce MFA and audit logging.",
-        "sensitive_input": "Ensure input forms validate parameters strictly, sanitizing special chars before handling."
+        "sensitive_input": "Ensure input forms validate parameters strictly, sanitizing special chars before handling.",
+        "vulnerable_dependency": "Upgrade outdated client-side libraries to modern patched releases.",
+        "missing_subresource_integrity": "Add integrity and crossorigin attributes to external third-party CDN scripts.",
+        "verbose_error_leak": "Disable verbose debugging and configure generic error pages in production.",
     }
     return recommendations.get(category, "Review the capability structure and enforce strict access authorization.")
 
@@ -394,6 +397,36 @@ def get_mission_detail(id: str):
                     "recommendation": f.get("recommendation", "") or _get_recommendation_by_category(f.get("category", ""))
                 })
                 
+            sev_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
+            findings_list.sort(
+                key=lambda item: sev_order.get((item.get("severity") or "").lower(), 0),
+                reverse=True,
+            )
+
+            # Ensure capabilities reflect all evaluated functional surfaces from findings
+            feature_names = {feat["name"].lower() for feat in features_list}
+            category_to_capability = {
+                "missing_csrf": "authentication",
+                "weak_authentication": "authentication",
+                "vulnerable_dependency": "client_side_libraries",
+                "missing_subresource_integrity": "cdn_subresources",
+                "missing_security_headers": "security_headers",
+                "verbose_error_leak": "error_handling",
+                "sensitive_input": "input_handling",
+                "file_upload_risk": "file_upload",
+                "exposed_endpoint": "api",
+                "admin_surface": "admin_panel",
+            }
+            for f in findings_list:
+                cat = f.get("category", "").lower()
+                cap = category_to_capability.get(cat)
+                if cap and cap not in feature_names:
+                    features_list.append({
+                        "name": cap,
+                        "confidence": 100.0
+                    })
+                    feature_names.add(cap)
+
             # Compute prioritized attack surface strictly for this target and mission
             route_urls = get_mission_routes(target, rep_data, cursor, mission_id=id)
             prioritized_surface = [
@@ -502,6 +535,36 @@ def get_mission_detail(id: str):
                 "recommendation": _get_recommendation_by_category(f["type"])
             })
             
+        sev_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
+        findings_list.sort(
+            key=lambda item: sev_order.get((item.get("severity") or "").lower(), 0),
+            reverse=True,
+        )
+
+        # Ensure capabilities reflect all evaluated functional surfaces from findings
+        feature_names = {feat["name"].lower() for feat in features_list}
+        category_to_capability = {
+            "missing_csrf": "authentication",
+            "weak_authentication": "authentication",
+            "vulnerable_dependency": "client_side_libraries",
+            "missing_subresource_integrity": "cdn_subresources",
+            "missing_security_headers": "security_headers",
+            "verbose_error_leak": "error_handling",
+            "sensitive_input": "input_handling",
+            "file_upload_risk": "file_upload",
+            "exposed_endpoint": "api",
+            "admin_surface": "admin_panel",
+        }
+        for f in findings_list:
+            cat = f.get("category", "").lower()
+            cap = category_to_capability.get(cat)
+            if cap and cap not in feature_names:
+                features_list.append({
+                    "name": cap,
+                    "confidence": 100.0
+                })
+                feature_names.add(cap)
+
         return {
             "mission_id": id,
             "target_url": target,

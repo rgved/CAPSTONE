@@ -11,7 +11,8 @@ Rules:
 - Supported finding categories:
   missing_csrf, weak_authentication, exposed_endpoint,
   file_upload_risk, missing_security_headers, admin_surface,
-  sensitive_input, unknown
+  sensitive_input, vulnerable_dependency, missing_subresource_integrity,
+  verbose_error_leak, unknown
 - Supported severities:
   informational, low, medium, high
 - Confidence must be between 0.0 and 1.0.
@@ -23,6 +24,10 @@ Negative Constraints & Boundary Rules:
 - missing_security_headers: Only flag when HTTP response headers are provided in the evidence package and explicitly lack essential defensive policies (Content-Security-Policy, Strict-Transport-Security, X-Frame-Options, X-Content-Type-Options).
 - file_upload_risk: Only flag when an input of type="file" or form with enctype="multipart/form-data" is present without explicit file type constraints.
 - admin_surface: Only flag when administrative endpoints (e.g., /admin, /administrator, /cpanel) are reachable from unauthenticated routes.
+- vulnerable_dependency: Only flag when script tags or libraries reference known outdated library versions (e.g. jquery < 3.5.0, angularjs 1.x, bootstrap < 4.5.0, lodash < 4.17.21) with documented public CVEs.
+- missing_subresource_integrity: Only flag when external third-party CDN scripts (is_external=true or external host) are loaded without an "integrity" cryptographic hash attribute.
+- verbose_error_leak: Only flag when error signatures, stack traces (Traceback, Whitelabel Error Page, Exception), or database error fragments are observed in the evidence package.
+- sensitive_input: Flag when forms accept unconstrained user data or when query parameters are reflected unencoded into the DOM.
 
 Examples:
 
@@ -39,20 +44,33 @@ Response:
   "evidence": ["Form action: /login, method: POST", "Inputs: user (text), pass (password)", "No CSRF token observed in form inputs"]
 }
 
-Example 2 (Missing Security Headers):
-Evidence: {"feature": "dashboard", "headers": {"Server": "nginx", "Content-Type": "text/html"}}
+Example 2 (Missing Subresource Integrity):
+Evidence: {"feature": "dashboard", "script_tags": [{"src": "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js", "integrity": null, "is_external": true}]}
 Response:
 {
-  "finding_category": "missing_security_headers",
-  "title": "Missing Baseline HTTP Defensive Headers",
-  "description": "The server response lacks essential defensive headers including Content-Security-Policy, Strict-Transport-Security, and X-Frame-Options.",
-  "reasoning": "HTTP response headers lack essential defensive policies, leaving client browsers exposed to framing, downgrade, and injection attacks.",
+  "finding_category": "missing_subresource_integrity",
+  "title": "External Script Loaded Without Subresource Integrity (SRI)",
+  "description": "Third-party script loaded from public CDN without cryptographic integrity hash verification.",
+  "reasoning": "External script fetched from CDN without integrity attribute allows unauthorized script tampering if the CDN is compromised.",
   "severity": "low",
   "confidence": 0.90,
-  "evidence": ["Response headers present: Server, Content-Type", "Missing: Content-Security-Policy, Strict-Transport-Security, X-Frame-Options"]
+  "evidence": ["External script: https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js", "Integrity attribute missing"]
 }
 
-Example 3 (Benign / Informational):
+Example 3 (Verbose Error Leak):
+Evidence: {"feature": "unknown", "status_code": 500, "error_signatures": ["Traceback (most recent call last)", "django.core.exceptions"]}
+Response:
+{
+  "finding_category": "verbose_error_leak",
+  "title": "Verbose Server Error and Stack Trace Disclosure",
+  "description": "The application returns a 500 status code leaking detailed framework execution traces.",
+  "reasoning": "Verbose error traces leak internal module paths and runtime state, aiding attacker reconnaissance.",
+  "severity": "medium",
+  "confidence": 0.95,
+  "evidence": ["HTTP status 500", "Signatures detected: Traceback (most recent call last), django.core.exceptions"]
+}
+
+Example 4 (Benign / Informational):
 Evidence: {"feature": "search", "forms": [{"action": "/search", "method": "GET", "inputs": [{"name": "q", "type": "text"}]}], "headers": {"Content-Security-Policy": "default-src 'self'"}}
 Response:
 {
@@ -68,13 +86,19 @@ Response:
 Evidence package:
 {{EVIDENCE_PACKAGE}}
 
-Return exactly:
+Analyze the evidence package thoroughly. Identify ALL distinct security observations and vulnerabilities supported by the evidence (check forms for missing CSRF, check headers for missing defensive policies, check script_tags for missing SRI or outdated dependencies, check status_code and error_signatures for stack trace leaks, check inputs for unencoded reflections, check endpoints for exposed admin surfaces).
+
+Return valid JSON with a "findings" array containing each distinct observation:
 {
-  "finding_category": "<category>",
-  "title": "<short title>",
-  "description": "<evidence-backed description>",
-  "reasoning": "<concise security explanation of why this evidence leads to the finding and confidence score>",
-  "severity": "<informational|low|medium|high>",
-  "confidence": <0.0-1.0>,
-  "evidence": ["<evidence item>", "<evidence item>"]
+  "findings": [
+    {
+      "finding_category": "<category>",
+      "title": "<short title>",
+      "description": "<evidence-backed description>",
+      "reasoning": "<concise security explanation of why this evidence leads to the finding and confidence score>",
+      "severity": "<informational|low|medium|high>",
+      "confidence": <0.0-1.0>,
+      "evidence": ["<evidence item>", "<evidence item>"]
+    }
+  ]
 }

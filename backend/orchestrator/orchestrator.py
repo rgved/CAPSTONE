@@ -317,10 +317,13 @@ class Orchestrator:
         all_input_fields = []
         all_buttons = []
         all_scripts = []
+        all_script_tags = []
         all_inline_scripts = []
         all_links = []
         all_meta_tags = []
         all_comments = []
+        all_error_signatures = []
+        all_reflected_parameters = []
         headers = {}
         status_code = 200
         url = ""
@@ -337,7 +340,9 @@ class Orchestrator:
                 url = recon.get("url", "")
             if recon.get("headers") and not headers:
                 headers = recon.get("headers", {})
-            if recon.get("status_code"):
+            if recon.get("status_code") and recon.get("status_code") >= 400:
+                status_code = recon.get("status_code")
+            elif not status_code or status_code == 200:
                 status_code = recon.get("status_code", 200)
 
             for f in recon.get("forms", []):
@@ -356,6 +361,9 @@ class Orchestrator:
                 if s and s not in seen_scripts:
                     seen_scripts.add(s)
                     all_scripts.append(s)
+            for st in recon.get("script_tags", []):
+                if st and st not in all_script_tags:
+                    all_script_tags.append(st)
             for ins in recon.get("inline_scripts", []):
                 all_inline_scripts.append(ins)
             for lk in recon.get("links", []):
@@ -366,6 +374,12 @@ class Orchestrator:
                 all_meta_tags.append(m)
             for c in recon.get("comments", []):
                 all_comments.append(c)
+            for es in recon.get("error_signatures", []):
+                if es and es not in all_error_signatures:
+                    all_error_signatures.append(es)
+            for rp in recon.get("reflected_parameters", []):
+                if rp and rp not in all_reflected_parameters:
+                    all_reflected_parameters.append(rp)
 
         return {
             "url": url or (self.last_saved_route.url if self.last_saved_route else ""),
@@ -374,12 +388,15 @@ class Orchestrator:
             "input_fields": all_input_fields,
             "buttons": all_buttons,
             "scripts": all_scripts,
+            "script_tags": all_script_tags,
             "inline_scripts": all_inline_scripts,
             "links": all_links,
             "meta_tags": all_meta_tags,
             "headers": headers,
             "status_code": status_code,
             "comments": all_comments,
+            "error_signatures": all_error_signatures,
+            "reflected_parameters": all_reflected_parameters,
         }
 
     def _build_report_context(self, mission: MissionState) -> dict:

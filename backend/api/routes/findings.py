@@ -111,6 +111,11 @@ def get_findings_list(
                     
             filtered_findings.append(f)
             
+        sev_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
+        filtered_findings.sort(
+            key=lambda f: sev_order.get((f.get("severity") or "").lower(), 0),
+            reverse=True,
+        )
         return filtered_findings
     finally:
         conn.close()
@@ -123,6 +128,9 @@ def _get_recommendation_by_category(category: str) -> str:
         "file_upload_risk": "Enforce server-side file ext validations, upload size constraints, and change filename on save.",
         "missing_security_headers": "Ensure modern security headers (HSTS, CSP, X-Frame-Options, XSS protection) are present.",
         "admin_surface": "Block public routing to administration components, enforce MFA and audit logging.",
-        "sensitive_input": "Ensure input forms validate parameters strictly, sanitizing special chars before handling."
+        "sensitive_input": "Ensure input forms validate parameters strictly, sanitizing special chars before handling.",
+        "vulnerable_dependency": "Upgrade outdated client-side libraries to modern patched releases.",
+        "missing_subresource_integrity": "Add integrity and crossorigin attributes to external third-party CDN scripts.",
+        "verbose_error_leak": "Disable verbose debugging and configure generic error pages in production.",
     }
     return recommendations.get(category, "Review the capability structure and enforce strict access authorization.")

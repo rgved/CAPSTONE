@@ -7,12 +7,35 @@ import {
   Target,
   ArrowLeft,
   ChevronRight,
-  TrendingDown,
   Shield,
+  ShieldAlert,
   LayoutDashboard,
   ClipboardList,
   Sparkles
 } from "lucide-react";
+
+const getOwaspCategory = (category?: string): { code: string; name: string } => {
+  switch (category?.toLowerCase()) {
+    case "missing_csrf":
+    case "admin_surface":
+    case "exposed_endpoint":
+      return { code: "A01:2025", name: "Broken Access Control" };
+    case "missing_security_headers":
+    case "verbose_error_leak":
+      return { code: "A02:2025", name: "Security Misconfiguration" };
+    case "vulnerable_dependency":
+      return { code: "A03:2025", name: "Software Supply Chain Failures" };
+    case "sensitive_input":
+      return { code: "A05:2025", name: "Injection" };
+    case "weak_authentication":
+      return { code: "A07:2025", name: "Authentication Failures" };
+    case "missing_subresource_integrity":
+    case "file_upload_risk":
+      return { code: "A08:2025", name: "Software or Data Integrity Failures" };
+    default:
+      return { code: "A02:2025", name: "Security Misconfiguration" };
+  }
+};
 
 export default function Reports() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,10 +110,15 @@ export default function Reports() {
       );
     }
 
-    // Calculations for metrics display
-    const originalTokens = report.statistics?.token_count_naive ?? 2297;
-    const reducedTokens = report.statistics?.token_count_efficient ?? 997;
-    const reduction = originalTokens > 0 ? ((originalTokens - reducedTokens) / originalTokens) * 100 : 56.6;
+    const hasHigh = report.findings.some(f => f.severity?.toLowerCase() === "high");
+    const hasMed = report.findings.some(f => f.severity?.toLowerCase() === "medium");
+
+    const owaspMap = new Map<string, string>();
+    report.findings.forEach(f => {
+      const owasp = getOwaspCategory(f.category);
+      owaspMap.set(owasp.code, owasp.name);
+    });
+    const activeOwasp = Array.from(owaspMap.entries()).map(([code, name]) => ({ code, name }));
 
     return (
       <div className="space-y-8 animate-fadeIn max-w-5xl mx-auto">
@@ -166,25 +194,40 @@ export default function Reports() {
 
           {/* Sidebar Metrics */}
           <div className="space-y-8">
-            {/* Research Stats */}
-            <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl space-y-6">
+            {/* OWASP Top 10 Risk Alignment */}
+            <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl space-y-4">
               <h3 className="text-sm font-bold text-[#F8FAFC] border-b border-[#1F2937] pb-3 flex items-center gap-2">
-                <LayoutDashboard className="w-4 h-4 text-[#3B82F6]" /> Research Metrics
+                <ShieldAlert className="w-4 h-4 text-[#EF4444]" /> OWASP Top 10 Alignment
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#94A3B8]">Original Payload:</span>
-                  <span className="font-mono text-[#EF4444] font-bold">{originalTokens} tokens</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#94A3B8]">Selective Fetch:</span>
-                  <span className="font-mono text-[#22C55E] font-bold">{reducedTokens} tokens</span>
-                </div>
-                <div className="pt-3 border-t border-[#1F2937] flex justify-between items-center">
-                  <span className="text-xs text-[#F8FAFC] font-semibold">Token Reduction:</span>
-                  <span className="text-sm font-extrabold text-[#22C55E] inline-flex items-center gap-0.5">
-                    <TrendingDown className="w-4 h-4" /> {reduction.toFixed(1)}%
+                  <span className="text-[#94A3B8]">Threat Posture:</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border ${
+                    hasHigh ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30" :
+                    hasMed ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30" :
+                    "bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/30"
+                  }`}>
+                    {hasHigh ? "High Risk Surface" : hasMed ? "Moderate Risk" : "Low Risk"}
                   </span>
+                </div>
+                <div className="pt-2 border-t border-[#1F2937]/50 space-y-2">
+                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Impacted Categories</span>
+                  {activeOwasp.length === 0 ? (
+                    <p className="text-xs text-[#94A3B8] italic">No active OWASP categories identified.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {activeOwasp.map((cat, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-[#0B1220] border border-[#1F2937] text-xs">
+                          <span className="font-mono text-[10px] text-[#3B82F6] font-bold">{cat.code}</span>
+                          <span className="text-[11px] text-[#F8FAFC] truncate max-w-[150px]">{cat.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-[#1F2937] flex justify-between items-center text-xs">
+                  <span className="text-[#94A3B8]">Action Items:</span>
+                  <span className="font-mono font-bold text-[#22C55E]">{report.recommendations.length} Remediations</span>
                 </div>
               </div>
             </div>
@@ -223,7 +266,7 @@ export default function Reports() {
               Findings Registry ({report.findings.length})
             </h3>
             <span className="text-xs font-medium text-[#A855F7] flex items-center gap-1.5 bg-[#A855F7]/10 px-3 py-1 rounded-full border border-[#A855F7]/20 w-fit">
-              <Sparkles className="w-3.5 h-3.5" /> Explainable Security Findings & Confidence Active
+              <Sparkles className="w-3.5 h-3.5" /> Explainable Security Findings
             </span>
           </div>
           <div className="space-y-4">
@@ -234,7 +277,14 @@ export default function Reports() {
                 <p className="text-xs text-[#94A3B8]">Target surface showed no classified vulnerabilities matching current heuristics.</p>
               </div>
             ) : (
-              report.findings.map((f, idx) => (
+              [...report.findings]
+                .sort((a, b) => {
+                  const severityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, informational: 0 };
+                  const weightA = severityOrder[a.severity?.toLowerCase()] ?? 0;
+                  const weightB = severityOrder[b.severity?.toLowerCase()] ?? 0;
+                  return weightB - weightA;
+                })
+                .map((f, idx) => (
                 <div key={idx} className={`border rounded-xl p-5 space-y-4 ${getSeverityBorder(f.severity)}`}>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
@@ -249,11 +299,6 @@ export default function Reports() {
                       <h4 className="text-sm font-bold text-[#F8FAFC]">{f.title}</h4>
                     </div>
                     <div className="flex items-center gap-3">
-                      {f.confidence !== undefined && (
-                        <span className="text-xs font-bold text-[#8B5CF6] bg-[#8B5CF6]/10 px-2 py-0.5 rounded border border-[#8B5CF6]/20">
-                          {(f.confidence * 100).toFixed(0)}% Conf.
-                        </span>
-                      )}
                       <span className="text-xs font-mono text-[#94A3B8]">{f.finding_id}</span>
                     </div>
                   </div>

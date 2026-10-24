@@ -171,7 +171,7 @@ describe("Frontend Dashboard Pages", () => {
       expect(screen.getByText("Inspection Window")).toBeInTheDocument();
       expect(screen.getByText("http://localhost:8080")).toBeInTheDocument();
       expect(screen.getByText("CSRF vulnerable login form")).toBeInTheDocument();
-      expect(screen.getByText("60%")).toBeInTheDocument();
+      expect(screen.getByText("OWASP Top 10 Risk Mapping")).toBeInTheDocument();
       expect(screen.getByText("RUN_RECON")).toBeInTheDocument();
     });
   });

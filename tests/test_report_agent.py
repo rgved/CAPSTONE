@@ -109,3 +109,46 @@ class TestReportAgent:
         assert report.statistics["meta_tags_count"] == 2
         assert report.statistics["comments_count"] == 1
 
+    def test_report_findings_sorted_descending_by_severity(self) -> None:
+        agent = ReportAgent()
+        f_low = Finding(
+            finding_id="FIND-001",
+            type="missing_security_headers",
+            title="Low Severity Header",
+            feature="general",
+            severity="low",
+            security_confidence=0.8,
+            evidence=[],
+            description="Missing headers",
+        )
+        f_high = Finding(
+            finding_id="FIND-002",
+            type="missing_csrf",
+            title="High Severity CSRF",
+            feature="authentication",
+            severity="high",
+            security_confidence=0.9,
+            evidence=[],
+            description="CSRF missing",
+        )
+        f_med = Finding(
+            finding_id="FIND-003",
+            type="weak_authentication",
+            title="Medium Severity Auth",
+            feature="authentication",
+            severity="medium",
+            security_confidence=0.85,
+            evidence=[],
+            description="Weak auth",
+        )
+        report = agent.build_report(
+            mission_id="MISSION-001",
+            target_url="https://example.com",
+            findings=[f_low, f_high, f_med],
+            features=[],
+            routes=[],
+        )
+
+        severities = [rf.severity.lower() for rf in report.findings]
+        assert severities == ["high", "medium", "low"]
+

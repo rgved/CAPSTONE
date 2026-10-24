@@ -361,3 +361,61 @@ class TestReactSPAExtraction:
         assert "https://example.com/api/v1/users/profile" in result.links
         assert "https://example.com/actuator/health" in result.links
 
+    def test_extract_script_tags_with_integrity_and_cdn(self, agent: ReconAgent) -> None:
+        html = """
+        <html>
+          <head>
+            <script src="https://cdn.example.com/jquery-3.5.1.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.0.0/react.production.min.js" integrity="sha384-xyz" crossorigin="anonymous"></script>
+            <script src="/static/bundle.js"></script>
+          </head>
+        </html>
+        """
+        result = agent.parse_html("https://example.com", html)
+        assert len(result.script_tags) == 3
+        # First script: external, no integrity
+        s1 = next(s for s in result.script_tags if "jquery" in s["src"])
+        assert s1["is_external"] is True
+        assert s1["integrity"] is None
+
+        # Second script: external, with integrity
+        s2 = next(s for s in result.script_tags if "react" in s["src"])
+        assert s2["is_external"] is True
+        assert s2["integrity"] == "sha384-xyz"
+        assert s2["crossorigin"] == "anonymous"
+
+        # Third script: local bundle
+        s3 = next(s for s in result.script_tags if "bundle.js" in s["src"])
+        assert s3["is_external"] is False
+
+    def test_extract_error_signatures_on_failure(self, agent: ReconAgent) -> None:
+        html = """
+        <html>
+          <body>
+            <h1>Internal Server Error</h1>
+            <pre>Traceback (most recent call last):
+              File "/app/server.py", line 42, in get
+                ZeroDivisionError: division by zero
+            </pre>
+          </body>
+        </html>
+        """
+        result = agent.parse_html("https://example.com/error", html, status_code=500)
+        assert len(result.error_signatures) >= 2
+        assert any("Traceback" in sig for sig in result.error_signatures)
+        assert any("ZeroDivisionError" in sig for sig in result.error_signatures)
+
+    def test_detect_reflected_parameters(self, agent: ReconAgent) -> None:
+        html = """
+        <html>
+          <body>
+            <h1>Search Results for: test_query</h1>
+          </body>
+        </html>
+        """
+        result = agent.parse_html("https://example.com/search?q=test_query", html)
+        assert len(result.reflected_parameters) == 1
+        assert result.reflected_parameters[0]["param"] == "q"
+        assert result.reflected_parameters[0]["value"] == "test_query"
+        assert result.reflected_parameters[0]["reflected"] is True
+

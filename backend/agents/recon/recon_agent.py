@@ -152,9 +152,13 @@ class ReconAgent:
         inputs, input_fields = self._extract_input_fields(soup)
         buttons = self._extract_buttons(soup)
         scripts = self._extract_scripts(soup)
+        script_tags = self._extract_script_tags(soup)
         inline_scripts = self._extract_inline_scripts(soup)
         meta_tags = self._extract_meta_tags(soup)
         comments = self._extract_comments(soup)
+        final_status = status_code if status_code != 200 else self._last_status
+        error_signatures = self._extract_error_signatures(soup, html, final_status)
+        reflected_parameters = self._detect_reflected_parameters(url, html)
 
         result = ReconResult(
             url=url,
@@ -164,11 +168,14 @@ class ReconAgent:
             buttons=buttons,
             links=links,
             scripts=scripts,
+            script_tags=script_tags,
             inline_scripts=inline_scripts,
             meta_tags=meta_tags,
             headers=headers if headers is not None else self._last_headers,
-            status_code=status_code if status_code != 200 else self._last_status,
+            status_code=final_status,
             comments=comments,
+            error_signatures=error_signatures,
+            reflected_parameters=reflected_parameters,
         )
 
         logger.info(
@@ -426,4 +433,61 @@ class ReconAgent:
             if cleaned:
                 comments.append(cleaned[:500])
         return comments
+
+    def _extract_script_tags(self, soup: BeautifulSoup) -> list[dict[str, Any]]:
+        tags: list[dict[str, Any]] = []
+        for tag in soup.find_all("script", src=True):
+            src: str = tag["src"].strip()
+            if src:
+                integrity = (tag.get("integrity") or "").strip() or None
+                crossorigin = (tag.get("crossorigin") or "").strip() or None
+                parsed_src = urlparse(src)
+                is_external = bool(parsed_src.netloc)
+                tags.append({
+                    "src": src,
+                    "integrity": integrity,
+                    "crossorigin": crossorigin,
+                    "is_external": is_external,
+                })
+        return tags
+
+    def _extract_error_signatures(self, soup: BeautifulSoup, html: str, status_code: int) -> list[str]:
+        signatures: list[str] = []
+        patterns = [
+            "Traceback (most recent call last)",
+            "Whitelabel Error Page",
+            "SQLSTATE[",
+            "SyntaxError:",
+            "TypeError:",
+            "ZeroDivisionError",
+            "NullPointerException",
+            "org.springframework",
+            "django.core.exceptions",
+            "Fatal error:",
+            "Unhandled Exception",
+        ]
+        html_lower = html.lower()
+        for pattern in patterns:
+            if pattern.lower() in html_lower:
+                signatures.append(pattern)
+        if status_code >= 500 and not signatures:
+            signatures.append(f"HTTP {status_code} Internal Server Error")
+        return signatures
+
+    def _detect_reflected_parameters(self, url: str, html: str) -> list[dict[str, Any]]:
+        reflected: list[dict[str, Any]] = []
+        parsed = urlparse(url)
+        if not parsed.query:
+            return reflected
+        from urllib.parse import parse_qs
+        qs = parse_qs(parsed.query)
+        for param, values in qs.items():
+            for val in values:
+                if len(val) >= 3 and val in html:
+                    reflected.append({
+                        "param": param,
+                        "value": val,
+                        "reflected": True,
+                    })
+        return reflected
 
