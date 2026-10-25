@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -8,39 +8,78 @@ import contextvars
 import re
 
 from backend.orchestrator.orchestrator import Orchestrator
-from backend.services.storage_service import current_mission_id
+from backend.services.storage_service import current_mission_id, current_username
 from backend.memory.sqlite.database import get_connection
+from backend.api.routes.auth import get_current_user_from_header
 from backend.services.risk_scorer import prioritize_routes
-from backend.models.finding import get_default_reasoning
+from backend.models.finding import get_default_reasoning, get_default_recommendation
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+CATEGORY_TO_CAPABILITY = {
+    "missing_csrf": "authentication",
+    "weak_authentication": "authentication",
+    "vulnerable_dependency": "client_side_libraries",
+    "missing_subresource_integrity": "cdn_subresources",
+    "missing_security_headers": "security_headers",
+    "verbose_error_leak": "error_handling",
+    "sensitive_input": "input_handling",
+    "file_upload_risk": "file_upload",
+    "exposed_endpoint": "api",
+    "admin_surface": "admin_panel",
+}
+
+
+def normalize_confidence(val: float | int | None) -> float:
+    """F3: Safely normalize confidence to a 0.0 - 100.0 scale without compounding."""
+    if val is None:
+        return 0.0
+    try:
+        f = float(val)
+    except (ValueError, TypeError):
+        return 0.0
+    if f <= 1.0:
+        f = f * 100.0
+    return min(100.0, max(0.0, round(f, 1)))
+
+
 class ScanRequest(BaseModel):
     url: str
+    max_pages: Optional[int] = 5
+
 
 class ScanResponse(BaseModel):
     mission_id: str
 
-async def run_scan_background(url: str, mission_id: str, offset: int):
-    # Set coroutine context var for mission_id
+
+async def run_scan_background(url: str, mission_id: str, offset: int, max_pages: int = 5, username: Optional[str] = None):
+    # Set coroutine context var for mission_id and username
     current_mission_id.set(mission_id)
+    if username:
+        current_username.set(username)
     
-    orchestrator = Orchestrator(max_crawl_routes=5)
+    crawl_limit = max(1, min(max_pages, 20))
+    orchestrator = Orchestrator(max_crawl_routes=crawl_limit)
     orchestrator._mission_counter = offset
     try:
-        logger.info(f"Starting background scan for {mission_id} on target {url}")
+        logger.info(f"Starting background scan for {mission_id} on target {url} (max_pages={crawl_limit}, user={username})")
         await orchestrator.run(url)
         logger.info(f"Completed background scan for {mission_id}")
     except Exception as e:
         logger.error(f"Error running background scan for {mission_id}: {e}", exc_info=True)
+
 
 def get_max_mission_counter() -> int:
     conn = get_connection()
     try:
         cursor = conn.cursor()
         
+        # Get from missions table
+        cursor.execute("SELECT mission_id FROM missions")
+        missions_ids = [row["mission_id"] for row in cursor.fetchall() if row["mission_id"]]
+
         # Get from reports
         cursor.execute("SELECT mission_id FROM reports")
         reports_ids = [row["mission_id"] for row in cursor.fetchall() if row["mission_id"]]
@@ -49,11 +88,10 @@ def get_max_mission_counter() -> int:
         cursor.execute("SELECT mission_id FROM tasks WHERE mission_id IS NOT NULL")
         tasks_ids = [row["mission_id"] for row in cursor.fetchall()]
         
-        all_ids = set(reports_ids).union(tasks_ids)
+        all_ids = set(missions_ids).union(reports_ids).union(tasks_ids)
         
         max_counter = 0
         for m_id in all_ids:
-            # Parse f"MISSION-{counter:03d}"
             match = re.match(r"MISSION-(\d+)", m_id)
             if match:
                 val = int(match.group(1))
@@ -66,28 +104,60 @@ def get_max_mission_counter() -> int:
     finally:
         conn.close()
 
+
 @router.post("/scan", response_model=ScanResponse)
-def start_scan(payload: ScanRequest, background_tasks: BackgroundTasks):
+def start_scan(payload: ScanRequest, background_tasks: BackgroundTasks, authorization: Optional[str] = Header(None)):
     url = payload.url.strip()
     if not (url.startswith("http://") or url.startswith("https://")):
         raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
         
+    user = get_current_user_from_header(authorization)
+    username = user["username"] if user else None
+
+    # I4: Prevent concurrent scans that collide or overload resources
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT mission_id FROM missions WHERE status = 'running' LIMIT 1")
+        active = cursor.fetchone()
+        if active:
+            raise HTTPException(
+                status_code=429,
+                detail=f"A mission ({active['mission_id']}) is already in progress. Please wait for it to finish."
+            )
+    finally:
+        conn.close()
+
     # Determine next mission ID
     max_counter = get_max_mission_counter()
     next_counter = max_counter + 1
     next_mission_id = f"MISSION-{next_counter:03d}"
     
-    # Launch in background
-    background_tasks.add_task(run_scan_background, url, next_mission_id, max_counter)
+    # Launch in background with configured max_pages (I8) and username
+    pages = payload.max_pages or 5
+    background_tasks.add_task(run_scan_background, url, next_mission_id, max_counter, pages, username)
     
     return {"mission_id": next_mission_id}
 
 @router.get("/missions")
-def get_missions():
+def get_missions(authorization: Optional[str] = Header(None)):
+    user = get_current_user_from_header(authorization)
+    username = user["username"] if user else None
+
     conn = get_connection()
     try:
         cursor = conn.cursor()
         
+        # I1: Read missions table as source of truth
+        if username:
+            cursor.execute(
+                "SELECT mission_id, target_url, status, started_at, finished_at, username FROM missions WHERE username = ? OR username IS NULL ORDER BY id DESC",
+                (username,)
+            )
+        else:
+            cursor.execute("SELECT mission_id, target_url, status, started_at, finished_at, username FROM missions ORDER BY id DESC")
+        db_missions = {row["mission_id"]: dict(row) for row in cursor.fetchall()}
+
         # Get all reports
         cursor.execute("SELECT mission_id, target_url, generated_at, report_json FROM reports")
         reports_rows = cursor.fetchall()
@@ -109,54 +179,53 @@ def get_missions():
         routes_mission_ids = [row["mission_id"] for row in cursor.fetchall() if row["mission_id"]]
             
         # Compile all unique mission IDs
-        all_ids = set(reports_map.keys()).union(missions_tasks.keys()).union(routes_mission_ids)
+        all_ids = set(db_missions.keys()).union(reports_map.keys()).union(missions_tasks.keys()).union(routes_mission_ids)
         
         missions = []
-        for m_id in sorted(all_ids):
+        for m_id in sorted(all_ids, reverse=True):
             status = "completed"
             target = ""
             created_at = None
             findings_count = 0
             
-            # If report exists
+            # If mission is in missions table (I1 / F1)
+            if m_id in db_missions:
+                target = db_missions[m_id]["target_url"] or ""
+                status = db_missions[m_id]["status"] or "running"
+                created_at = db_missions[m_id]["started_at"]
+
+            # If report exists, mission is definitively completed and we have exact findings count
             if m_id in reports_map:
                 r = reports_map[m_id]
                 try:
                     rep_data = json.loads(r["report_json"])
                     findings_count = len(rep_data.get("findings", []))
-                    target = r["target_url"] or rep_data.get("target_url", "")
+                    if not target:
+                        target = r["target_url"] or rep_data.get("target_url", "")
                 except Exception:
                     findings_count = 0
-                    target = r["target_url"] or ""
-                created_at = r["generated_at"]
+                    if not target:
+                        target = r["target_url"] or ""
+                if not created_at:
+                    created_at = r["generated_at"]
                 status = "completed"
             
-            # If tasks exist, extract target or timestamp if missing
+            # Fallback checks from tasks if not in missions table or report
             if m_id in missions_tasks:
                 m_tasks = missions_tasks[m_id]
                 if not target:
                     target = next((t["target"] for t in m_tasks if t["target"]), "")
                 if not created_at and m_tasks:
                     created_at = m_tasks[0]["created_at"]
-                    
-                # Determine status if no report exists
-                if m_id not in reports_map:
+                if m_id not in reports_map and m_id not in db_missions:
                     has_stop_completed = any(t["action"] == "STOP" and t["status"] == "completed" for t in m_tasks)
                     has_failed = any(t["status"] == "failed" for t in m_tasks)
-                    
                     if has_failed:
                         status = "failed"
                     elif has_stop_completed:
                         status = "completed"
                     else:
-                        try:
-                            last_time = datetime.fromisoformat(m_tasks[-1]["created_at"])
-                            if (datetime.now(timezone.utc) - last_time).total_seconds() > 600:
-                                status = "failed"
-                            else:
-                                status = "running"
-                        except Exception:
-                            status = "running"
+                        status = "running"
             
             # Fallback target from routes if still blank
             if not target:
@@ -166,6 +235,9 @@ def get_missions():
                     target = m_r["url"]
                     if not created_at and "discovered_at" in m_r.keys():
                         created_at = str(m_r["discovered_at"])
+                    # F7: If only routes exist and no tasks, reports, or mission entry, it's failed, not ghost completed
+                    if m_id not in reports_map and m_id not in db_missions and m_id not in missions_tasks:
+                        status = "failed"
                         
             if not target:
                 cursor.execute("SELECT url FROM routes ORDER BY id ASC LIMIT 1")
@@ -177,6 +249,7 @@ def get_missions():
             missions.append({
                 "mission_id": m_id,
                 "target": target or "https://target-app.local",
+                "target_url": target or "https://target-app.local",
                 "status": status,
                 "created_at": created_at,
                 "findings_count": findings_count
@@ -187,21 +260,6 @@ def get_missions():
         conn.close()
 
 from urllib.parse import urlparse, urljoin
-
-def _get_recommendation_by_category(category: str) -> str:
-    recommendations = {
-        "missing_csrf": "Implement anti-CSRF tokens on state-changing forms.",
-        "weak_authentication": "Strengthen authentication parameters, use HTTPS, lockout mechanisms, and complexity requirements.",
-        "exposed_endpoint": "Restrict access to sensitive pathways with proper IP filtering and role checks.",
-        "file_upload_risk": "Enforce server-side file ext validations, upload size constraints, and change filename on save.",
-        "missing_security_headers": "Ensure modern security headers (HSTS, CSP, X-Frame-Options, XSS protection) are present.",
-        "admin_surface": "Block public routing to administration components, enforce MFA and audit logging.",
-        "sensitive_input": "Ensure input forms validate parameters strictly, sanitizing special chars before handling.",
-        "vulnerable_dependency": "Upgrade outdated client-side libraries to modern patched releases.",
-        "missing_subresource_integrity": "Add integrity and crossorigin attributes to external third-party CDN scripts.",
-        "verbose_error_leak": "Disable verbose debugging and configure generic error pages in production.",
-    }
-    return recommendations.get(category, "Review the capability structure and enforce strict access authorization.")
 
 def get_mission_routes(target: str, rep_data: dict, cursor, mission_id: str = "") -> list[str]:
     target_netloc = urlparse(target).netloc.lower() if target else ""
@@ -254,6 +312,10 @@ def get_mission_detail(id: str):
     try:
         cursor = conn.cursor()
         
+        # Check if mission exists in missions table (I1 / F1)
+        cursor.execute("SELECT status, target_url, started_at, finished_at FROM missions WHERE mission_id = ?", (id,))
+        mission_row = cursor.fetchone()
+
         # Check if report exists
         cursor.execute("SELECT report_id, target_url, generated_at, report_json FROM reports WHERE mission_id = ?", (id,))
         report_row = cursor.fetchone()
@@ -267,7 +329,7 @@ def get_mission_detail(id: str):
             cursor.execute("SELECT action, status, created_at, target FROM tasks WHERE mission_id IS NULL ORDER BY id ASC")
             task_rows = cursor.fetchall()
             
-        if not task_rows and not report_row:
+        if not task_rows and not report_row and not mission_row:
             cursor.execute("SELECT url, discovered_at FROM routes WHERE mission_id = ?", (id,))
             m_routes = cursor.fetchall()
             if not m_routes:
@@ -276,14 +338,21 @@ def get_mission_detail(id: str):
         target = ""
         created_at = None
         
+        if mission_row:
+            target = mission_row["target_url"] or ""
+            created_at = mission_row["started_at"]
+
         if report_row:
             try:
                 rep_data = json.loads(report_row["report_json"])
-                target = report_row["target_url"] or rep_data.get("target_url", "")
+                if not target:
+                    target = report_row["target_url"] or rep_data.get("target_url", "")
             except Exception:
                 rep_data = {}
-                target = report_row["target_url"] or ""
-            created_at = report_row["generated_at"]
+                if not target:
+                    target = report_row["target_url"] or ""
+            if not created_at:
+                created_at = report_row["generated_at"]
         else:
             rep_data = {}
             
@@ -308,9 +377,11 @@ def get_mission_detail(id: str):
                 
         target = target or "https://target-app.local"
             
-        # Determine status
+        # Determine status: missions table and reports are authoritative (F1 / F7)
         if report_row:
             status = "completed"
+        elif mission_row:
+            status = mission_row["status"] or "running"
         elif task_rows:
             has_stop_completed = any(t["action"] == "STOP" and t["status"] == "completed" for t in task_rows)
             has_failed = any(t["status"] == "failed" for t in task_rows)
@@ -319,14 +390,7 @@ def get_mission_detail(id: str):
             elif has_stop_completed:
                 status = "completed"
             else:
-                try:
-                    last_time = datetime.fromisoformat(task_rows[-1]["created_at"])
-                    if (datetime.now(timezone.utc) - last_time).total_seconds() > 600:
-                        status = "failed"
-                    else:
-                        status = "running"
-                except Exception:
-                    status = "running"
+                status = "running"
         else:
             status = "completed"
                     
@@ -346,8 +410,8 @@ def get_mission_detail(id: str):
         # If completed, extract everything from the report!
         if report_row:
             stats = rep_data.get("statistics", {})
-            original_tokens = stats.get("token_count_naive", 2297)
-            reduced_tokens = stats.get("token_count_efficient", 997)
+            original_tokens = stats.get("token_count_naive", 0)
+            reduced_tokens = stats.get("token_count_efficient", 0)
             reduction_percentage = 0.0
             if original_tokens > 0:
                 reduction_percentage = ((original_tokens - reduced_tokens) / original_tokens) * 100
@@ -355,9 +419,7 @@ def get_mission_detail(id: str):
             features_list = []
             if rep_data.get("features"):
                 for f in rep_data.get("features", []):
-                    conf = f.get("confidence") or f.get("classification_confidence", 0.0)
-                    if conf <= 1.0:
-                        conf = conf * 100
+                    conf = normalize_confidence(f.get("confidence") or f.get("classification_confidence", 0.0))
                     features_list.append({
                         "name": f.get("name", "unknown"),
                         "confidence": conf
@@ -375,9 +437,7 @@ def get_mission_detail(id: str):
                            (target_netloc and target_netloc in (r["routes"] or "").lower())
                     ]
                 for row in feat_rows:
-                    conf = row["classification_confidence"] or 0.0
-                    if conf <= 1.0:
-                        conf = conf * 100
+                    conf = normalize_confidence(row["classification_confidence"])
                     features_list.append({
                         "name": row["name"],
                         "confidence": conf
@@ -394,10 +454,10 @@ def get_mission_detail(id: str):
                     "evidence": f.get("evidence", []),
                     "description": f.get("description", ""),
                     "reasoning": f.get("reasoning") or get_default_reasoning(f.get("category", ""), f.get("description", "")),
-                    "recommendation": f.get("recommendation", "") or _get_recommendation_by_category(f.get("category", ""))
+                    "recommendation": f.get("recommendation", "") or get_default_recommendation(f.get("category", ""))
                 })
                 
-            sev_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
+            sev_order = {"critical": 4, "high": 3, "medium": 2, "low": 1, "informational": 0}
             findings_list.sort(
                 key=lambda item: sev_order.get((item.get("severity") or "").lower(), 0),
                 reverse=True,
@@ -405,21 +465,9 @@ def get_mission_detail(id: str):
 
             # Ensure capabilities reflect all evaluated functional surfaces from findings
             feature_names = {feat["name"].lower() for feat in features_list}
-            category_to_capability = {
-                "missing_csrf": "authentication",
-                "weak_authentication": "authentication",
-                "vulnerable_dependency": "client_side_libraries",
-                "missing_subresource_integrity": "cdn_subresources",
-                "missing_security_headers": "security_headers",
-                "verbose_error_leak": "error_handling",
-                "sensitive_input": "input_handling",
-                "file_upload_risk": "file_upload",
-                "exposed_endpoint": "api",
-                "admin_surface": "admin_panel",
-            }
             for f in findings_list:
                 cat = f.get("category", "").lower()
-                cap = category_to_capability.get(cat)
+                cap = CATEGORY_TO_CAPABILITY.get(cat)
                 if cap and cap not in feature_names:
                     features_list.append({
                         "name": cap,
@@ -446,7 +494,8 @@ def get_mission_detail(id: str):
                     "buttons": stats.get("buttons_count", 0),
                     "scripts": stats.get("scripts_count", 0),
                     "links": stats.get("links_count", len(route_urls) or 1),
-                    "meta_tags": stats.get("meta_tags_count", 0)
+                    "meta_tags": stats.get("meta_tags_count", 0),
+                    "is_spa": bool(stats.get("is_spa", False))
                 },
                 "features": features_list,
                 "token_reduction": {
@@ -494,9 +543,7 @@ def get_mission_detail(id: str):
                        (target_netloc and target_netloc in (r["routes"] or "").lower())
                 ]
             for row in feat_rows:
-                conf = row["classification_confidence"] or 0.0
-                if conf <= 1.0:
-                    conf = conf * 100
+                conf = normalize_confidence(row["classification_confidence"])
                 features_list.append({
                     "name": row["name"],
                     "confidence": conf
@@ -532,10 +579,10 @@ def get_mission_detail(id: str):
                 "evidence": ev,
                 "description": f["description"],
                 "reasoning": reasoning_val,
-                "recommendation": _get_recommendation_by_category(f["type"])
+                "recommendation": get_default_recommendation(f["type"])
             })
             
-        sev_order = {"high": 3, "medium": 2, "low": 1, "informational": 0}
+        sev_order = {"critical": 4, "high": 3, "medium": 2, "low": 1, "informational": 0}
         findings_list.sort(
             key=lambda item: sev_order.get((item.get("severity") or "").lower(), 0),
             reverse=True,
@@ -543,21 +590,9 @@ def get_mission_detail(id: str):
 
         # Ensure capabilities reflect all evaluated functional surfaces from findings
         feature_names = {feat["name"].lower() for feat in features_list}
-        category_to_capability = {
-            "missing_csrf": "authentication",
-            "weak_authentication": "authentication",
-            "vulnerable_dependency": "client_side_libraries",
-            "missing_subresource_integrity": "cdn_subresources",
-            "missing_security_headers": "security_headers",
-            "verbose_error_leak": "error_handling",
-            "sensitive_input": "input_handling",
-            "file_upload_risk": "file_upload",
-            "exposed_endpoint": "api",
-            "admin_surface": "admin_panel",
-        }
         for f in findings_list:
             cat = f.get("category", "").lower()
-            cap = category_to_capability.get(cat)
+            cap = CATEGORY_TO_CAPABILITY.get(cat)
             if cap and cap not in feature_names:
                 features_list.append({
                     "name": cap,
@@ -578,7 +613,8 @@ def get_mission_detail(id: str):
                 "buttons": 0,
                 "scripts": 0,
                 "links": 0,
-                "meta_tags": 0
+                "meta_tags": 0,
+                "is_spa": False
             },
             "features": features_list,
             "token_reduction": {

@@ -175,6 +175,7 @@ class ReportAgent:
             stats["links_count"] = len(recon_result.get("links", []))
             stats["meta_tags_count"] = len(recon_result.get("meta_tags", []))
             stats["comments_count"] = len(recon_result.get("comments", []))
+            stats["is_spa"] = bool(recon_result.get("is_spa", False))
         return stats
 
     def _severity_breakdown(self, findings: list[Finding]) -> dict[str, int]:

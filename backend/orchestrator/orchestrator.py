@@ -3,6 +3,8 @@ backend/orchestrator/orchestrator.py
 
 Deterministic orchestrator extended for multi-page prioritized scanning and Phase 6 analysis.
 """
+import json
+import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlparse
@@ -26,6 +28,8 @@ from backend.services.storage_service import (
     save_route,
     save_report,
     save_task,
+    save_mission,
+    update_mission_status,
     update_task_status,
 )
 
@@ -127,9 +131,8 @@ class Orchestrator:
                 return mission
 
             logger.error("Task %s failed with errors: %s", task.task_id, response.errors)
-            with open("orchestrator_errors.log", "a") as f:
-                f.write(f"Task {task.task_id} failed with errors: {response.errors}\n")
             mission.status = "failed"
+            update_mission_status(mission.mission_id, "failed", db_path=self._db_path)
             return mission
 
         if task.action == "RUN_RECON":
@@ -199,6 +202,9 @@ class Orchestrator:
 
             for finding_payload in response.new_findings:
                 finding = Finding.model_validate(finding_payload)
+                # Q2: Wire finding to originating route_id if not present
+                if finding.route_id is None and self.last_saved_route is not None:
+                    finding = finding.model_copy(update={"route_id": self.last_saved_route.route_id})
                 saved_finding = save_finding(finding, db_path=self._db_path, mission_id=mission.mission_id)
                 self.last_saved_findings.append(saved_finding)
                 self._semantic_memory.upsert_finding(saved_finding)
@@ -234,12 +240,29 @@ class Orchestrator:
         self.last_efficient_fetch_data = None
         self.last_analysis_data = None
         mission = self.create_mission(url)
+        save_mission(mission.mission_id, mission.target, status="running", db_path=self._db_path)
         from backend.services.storage_service import current_mission_id
         current_mission_id.set(mission.mission_id)
         logger.info("Mission created - mission_id=%s target=%s", mission.mission_id, url)
 
+        # I10: Architecture-defined safeguards for max iteration & runtime
+        max_iterations = 25
+        max_runtime_seconds = 180.0
+        start_time = time.monotonic()
+        iteration_count = 0
 
         while mission.status == "running":
+            iteration_count += 1
+            if iteration_count > max_iterations:
+                logger.error("Mission %s aborted: exceeded max iteration limit (%d)", mission.mission_id, max_iterations)
+                mission.status = "failed"
+                break
+
+            if time.monotonic() - start_time > max_runtime_seconds:
+                logger.error("Mission %s aborted: exceeded max runtime limit (%.1fs)", mission.mission_id, max_runtime_seconds)
+                mission.status = "failed"
+                break
+
             task = self.choose_next_task(mission)
             saved_task = save_task(task, db_path=self._db_path)
             mission.current_task_id = saved_task.task_id
@@ -247,6 +270,7 @@ class Orchestrator:
             if saved_task.action == "STOP":
                 update_task_status(saved_task.task_id, "completed", db_path=self._db_path)
                 mission.status = "completed"
+                update_mission_status(mission.mission_id, "completed", db_path=self._db_path)
                 break
 
             response = await self._dispatcher.dispatch(saved_task)
@@ -255,6 +279,7 @@ class Orchestrator:
             mission = self.update_state(mission, saved_task, response)
 
         if mission.status == "failed":
+            update_mission_status(mission.mission_id, "failed", db_path=self._db_path)
             self._record_stop_task(mission)
         logger.info("Mission finished - mission_id=%s status=%s", mission.mission_id, mission.status)
         return mission
@@ -332,6 +357,10 @@ class Orchestrator:
         seen_buttons: set[str] = set()
         seen_links: set[str] = set()
         seen_scripts: set[str] = set()
+        seen_forms: set[str] = set()
+        seen_meta: set[str] = set()
+        seen_inline_scripts: set[str] = set()
+        seen_comments: set[str] = set()
 
         for recon in self.all_recon_data:
             if not isinstance(recon, dict):
@@ -346,7 +375,10 @@ class Orchestrator:
                 status_code = recon.get("status_code", 200)
 
             for f in recon.get("forms", []):
-                all_forms.append(f)
+                f_key = json.dumps(f, sort_keys=True) if isinstance(f, dict) else str(f)
+                if f_key not in seen_forms:
+                    seen_forms.add(f_key)
+                    all_forms.append(f)
             for inp in recon.get("inputs", []):
                 if inp and inp not in seen_inputs:
                     seen_inputs.add(inp)
@@ -365,21 +397,30 @@ class Orchestrator:
                 if st and st not in all_script_tags:
                     all_script_tags.append(st)
             for ins in recon.get("inline_scripts", []):
-                all_inline_scripts.append(ins)
+                if ins and ins not in seen_inline_scripts:
+                    seen_inline_scripts.add(ins)
+                    all_inline_scripts.append(ins)
             for lk in recon.get("links", []):
                 if lk and lk not in seen_links:
                     seen_links.add(lk)
                     all_links.append(lk)
             for m in recon.get("meta_tags", []):
-                all_meta_tags.append(m)
+                m_key = json.dumps(m, sort_keys=True) if isinstance(m, dict) else str(m)
+                if m_key not in seen_meta:
+                    seen_meta.add(m_key)
+                    all_meta_tags.append(m)
             for c in recon.get("comments", []):
-                all_comments.append(c)
+                if c and c not in seen_comments:
+                    seen_comments.add(c)
+                    all_comments.append(c)
             for es in recon.get("error_signatures", []):
                 if es and es not in all_error_signatures:
                     all_error_signatures.append(es)
             for rp in recon.get("reflected_parameters", []):
                 if rp and rp not in all_reflected_parameters:
                     all_reflected_parameters.append(rp)
+
+        is_spa = any(recon.get("is_spa", False) for recon in self.all_recon_data) if self.all_recon_data else bool(self.last_recon_data.get("is_spa", False) if self.last_recon_data else False)
 
         return {
             "url": url or (self.last_saved_route.url if self.last_saved_route else ""),
@@ -397,6 +438,7 @@ class Orchestrator:
             "comments": all_comments,
             "error_signatures": all_error_signatures,
             "reflected_parameters": all_reflected_parameters,
+            "is_spa": is_spa,
         }
 
     def _build_report_context(self, mission: MissionState) -> dict:

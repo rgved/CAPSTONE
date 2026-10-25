@@ -5,7 +5,7 @@ Pydantic model for a Phase 6 security finding.
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -23,7 +23,11 @@ FindingCategory = Literal[
     "unknown",
 ]
 
-FindingSeverity = Literal["informational", "low", "medium", "high"]
+# I2: Added "critical" as the highest severity tier.
+FindingSeverity = Literal["informational", "low", "medium", "high", "critical"]
+
+# I6: Evidence is capped at 10 items to prevent unbounded LLM output.
+BoundedEvidenceList = Annotated[list[str], Field(default_factory=list, max_length=10)]
 
 
 class Finding(BaseModel):
@@ -33,7 +37,7 @@ class Finding(BaseModel):
     feature: str
     severity: FindingSeverity
     security_confidence: float = Field(ge=0.0, le=1.0)
-    evidence: list[str] = Field(default_factory=list)
+    evidence: BoundedEvidenceList = Field(default_factory=list)
     description: str = ""
     reasoning: str = ""
     route_id: Optional[int] = None
@@ -57,4 +61,26 @@ def get_default_reasoning(category: str, description: str = "") -> str:
     if category in _DEFAULT_REASONINGS:
         return _DEFAULT_REASONINGS[category]
     return description or "Security finding identified based on contextual analysis of response headers, form structures, and input boundaries."
+
+
+_DEFAULT_RECOMMENDATIONS: dict[str, str] = {
+    "missing_csrf": "Implement state-changing anti-CSRF token check on all state-changing endpoints.",
+    "weak_authentication": "Strengthen authentication parameters, use HTTPS, lockout mechanisms, and complexity requirements.",
+    "exposed_endpoint": "Restrict access to sensitive pathways with proper IP filtering and role checks.",
+    "file_upload_risk": "Enforce server-side file ext validations, upload size constraints, and change filename on save.",
+    "missing_security_headers": "Ensure modern security headers (HSTS, CSP, X-Frame-Options, XSS protection) are present.",
+    "admin_surface": "Block public routing to administration components, enforce MFA and audit logging.",
+    "sensitive_input": "Ensure input forms validate parameters strictly, sanitizing special chars before handling.",
+    "vulnerable_dependency": "Upgrade outdated client-side libraries to modern patched releases.",
+    "missing_subresource_integrity": "Add integrity and crossorigin attributes to external third-party CDN scripts.",
+    "verbose_error_leak": "Disable verbose debugging and configure generic error pages in production.",
+}
+
+
+def get_default_recommendation(category: str) -> str:
+    """R8: Centralized recommendation lookup shared across API endpoints."""
+    return _DEFAULT_RECOMMENDATIONS.get(
+        category,
+        "Review the capability structure and enforce strict access authorization."
+    )
 

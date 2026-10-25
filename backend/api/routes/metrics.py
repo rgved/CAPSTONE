@@ -29,12 +29,8 @@ def get_mission_runtimes_map() -> Dict[str, float]:
         runtimes = {}
         for m_id, t_list in times.items():
             if len(t_list) >= 2:
-                duration = (max(t_list) - min(t_list)).total_seconds()
-                if duration == 0:
-                    duration = 32.5
+                duration = max(0.1, (max(t_list) - min(t_list)).total_seconds())
                 runtimes[m_id] = round(duration, 1)
-            else:
-                runtimes[m_id] = 45.2
         return runtimes
     finally:
         conn.close()
@@ -45,11 +41,11 @@ def get_metrics_summary():
     try:
         cursor = conn.cursor()
         
-        # 1. Total counts
+        # 1. Total counts (I7: include all findings)
         missions = get_missions()
         total_missions = len(missions)
         
-        cursor.execute("SELECT count(*) FROM findings WHERE lower(severity) != 'informational'")
+        cursor.execute("SELECT count(*) FROM findings")
         total_findings = cursor.fetchone()[0]
         
         # 2. Query reports
@@ -69,13 +65,13 @@ def get_metrics_summary():
             try:
                 rep_data = json.loads(r["report_json"])
                 stats = rep_data.get("statistics", {})
-                naive = stats.get("token_count_naive", 2297)
-                efficient = stats.get("token_count_efficient", 997)
+                naive = stats.get("token_count_naive", 0)
+                efficient = stats.get("token_count_efficient", 0)
                 
-                reduction = 56.6
+                reduction = 0.0
                 if naive > 0:
                     reduction = ((naive - efficient) / naive) * 100
-                reductions.append(reduction)
+                    reductions.append(reduction)
                 token_reduction_by_mission.append({
                     "mission_id": m_id,
                     "reduction": round(reduction, 1)
@@ -84,38 +80,31 @@ def get_metrics_summary():
                 pass
                 
             # Runtime
-            rt = runtimes_map.get(m_id, 45.2)
-            runtimes.append(rt)
-            mission_runtime_trend.append({
-                "mission_id": m_id,
-                "runtime": rt
-            })
+            if m_id in runtimes_map:
+                rt = runtimes_map[m_id]
+                runtimes.append(rt)
+                mission_runtime_trend.append({
+                    "mission_id": m_id,
+                    "runtime": rt
+                })
             
-        # Fallbacks/Defaults if database has no records
-        if not token_reduction_by_mission:
-            token_reduction_by_mission = [{"mission_id": "MISSION-001", "reduction": 56.6}]
-        if not mission_runtime_trend:
-            mission_runtime_trend = [{"mission_id": "MISSION-001", "runtime": 45.2}]
-            runtimes = [45.2]
-            reductions = [56.6]
-            
-        avg_runtime = round(sum(runtimes) / len(runtimes), 1) if runtimes else 45.2
-        avg_token_reduction = round(sum(reductions) / len(reductions), 1) if reductions else 56.6
+        avg_runtime = round(sum(runtimes) / len(runtimes), 1) if runtimes else 0.0
+        avg_token_reduction = round(sum(reductions) / len(reductions), 1) if reductions else 0.0
         
-        # 3. Severity Distribution (Vulnerabilities only: High, Medium, Low)
-        severity_counts = {"High": 0, "Medium": 0, "Low": 0}
+        # 3. Severity Distribution (I2 & I7: Critical, High, Medium, Low, Informational)
+        severity_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Informational": 0}
         cursor.execute("SELECT severity FROM findings")
         for row in cursor.fetchall():
-            sev = row["severity"].capitalize()
-            if sev == "Critical":
-                sev = "High"
+            sev = (row["severity"] or "").capitalize()
             if sev in severity_counts:
                 severity_counts[sev] += 1
                 
         findings_by_severity = [
+            {"severity": "Critical", "count": severity_counts["Critical"]},
             {"severity": "High", "count": severity_counts["High"]},
             {"severity": "Medium", "count": severity_counts["Medium"]},
-            {"severity": "Low", "count": severity_counts["Low"]}
+            {"severity": "Low", "count": severity_counts["Low"]},
+            {"severity": "Informational", "count": severity_counts["Informational"]},
         ]
         
         # 4. Feature Distribution
@@ -132,15 +121,6 @@ def get_metrics_summary():
             feature_counts[display_name] = feature_counts.get(display_name, 0) + 1
             
         feature_distribution = [{"name": k, "count": v} for k, v in feature_counts.items()]
-        if not feature_distribution:
-            feature_distribution = [
-                {"name": "Authentication", "count": 1},
-                {"name": "File Upload", "count": 0},
-                {"name": "Dashboard", "count": 0},
-                {"name": "Admin Panel", "count": 0},
-                {"name": "Search", "count": 0},
-                {"name": "API", "count": 0}
-            ]
             
         return {
             "total_missions": total_missions,

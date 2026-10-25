@@ -8,6 +8,8 @@ from backend.api.routes.missions import router as missions_router
 from backend.api.routes.findings import router as findings_router
 from backend.api.routes.reports import router as reports_router
 from backend.api.routes.metrics import router as metrics_router
+from backend.api.routes.memory import router as memory_router
+from backend.api.routes.auth import router as auth_router
 
 app = FastAPI(
     title="Agentic Web Security Recon Platform API",
@@ -30,11 +32,13 @@ def startup_event():
     init_db()
 
 # Register Routers
+app.include_router(auth_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(missions_router, prefix="/api")
 app.include_router(findings_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 app.include_router(metrics_router, prefix="/api")
+app.include_router(memory_router, prefix="/api")
 
 if __name__ == "__main__":
     import uvicorn

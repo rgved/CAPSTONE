@@ -14,6 +14,7 @@ export interface ReconSummary {
   scripts: number;
   links: number;
   meta_tags: number;
+  is_spa?: boolean;
 }
 
 export interface FeatureItem {
@@ -41,7 +42,7 @@ export interface Finding {
   finding_id: string;
   title: string;
   category: string;
-  severity: "high" | "medium" | "low" | "informational";
+  severity: "critical" | "high" | "medium" | "low" | "informational";
   confidence: number;
   evidence: string[];
   description: string;
@@ -59,7 +60,7 @@ export interface MissionDetail {
   generated_at: string;
   recon_summary: ReconSummary;
   features: FeatureItem[];
-  token_reduction: TokenReduction;
+  token_reduction?: TokenReduction;
   findings: Finding[];
   prioritized_attack_surface?: PrioritizedEndpoint[];
   report_id: string | null;
@@ -73,8 +74,12 @@ export interface TimelineTask {
 
 export interface DashboardStats {
   total_missions: number;
+  assets_scanned?: number;
   total_findings: number;
-  avg_token_reduction: number;
+  critical_findings?: number;
+  high_findings?: number;
+  security_score?: number;
+  avg_token_reduction?: number;
   features_identified: number;
 }
 
@@ -88,6 +93,10 @@ export interface DashboardData {
     findings: number;
   }[];
   findings_severity: {
+    severity: string;
+    count: number;
+  }[];
+  findings_breakdown_full?: {
     severity: string;
     count: number;
   }[];

@@ -89,6 +89,17 @@ _LOW_SENSITIVITY_PATTERNS: list[tuple[re.Pattern[str], float, str]] = [
     (re.compile(r"\.(?:css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)(?:\?|$)", re.IGNORECASE), 0.2, "Static Asset"),
 ]
 
+# Q4: Dangerous query parameter names that indicate high-risk input vectors.
+# These boost exposure significantly beyond the generic +0.1 for any query string.
+_DANGEROUS_PARAM_PATTERNS: list[tuple[re.Pattern[str], float, str]] = [
+    (re.compile(r"(?:^|&)(?:redirect|return|next|url|callback|continue|dest|destination)=", re.IGNORECASE), 0.5, "Open Redirect Parameter"),
+    (re.compile(r"(?:^|&)(?:file|path|dir|folder|include|template|page|view|load)=", re.IGNORECASE), 0.5, "Path Traversal / LFI Parameter"),
+    (re.compile(r"(?:^|&)(?:cmd|exec|command|shell|run|eval|code)=", re.IGNORECASE), 0.6, "Command Injection Parameter"),
+    (re.compile(r"(?:^|&)(?:sql|query|q|search|filter|where|order|sort)=", re.IGNORECASE), 0.3, "SQL / Search Injection Parameter"),
+    (re.compile(r"(?:^|&)(?:token|key|secret|apikey|api_key|access_token|auth)=", re.IGNORECASE), 0.4, "Credential / Token Parameter"),
+    (re.compile(r"(?:^|&)(?:id|user_id|account_id|uid|pid|item_id|record_id)=", re.IGNORECASE), 0.25, "IDOR Enumeration Parameter"),
+]
+
 
 def calculate_endpoint_risk(
     url: str,
@@ -147,8 +158,23 @@ def calculate_endpoint_risk(
         exposure += min(0.2, forms_count * 0.1)
     if inputs_count > 0:
         exposure += min(0.2, inputs_count * 0.05)
+
+    # Q4: Dangerous query parameter names boost exposure based on attack vector severity.
+    # Previously all query strings only got a flat +0.1; now specific risky param names
+    # get a meaningful boost proportional to their actual attack surface.
     if parsed.query:
-        exposure += 0.1
+        dangerous_boost = 0.0
+        dangerous_reason_suffix = ""
+        for pattern, boost, label in _DANGEROUS_PARAM_PATTERNS:
+            if pattern.search(parsed.query):
+                if boost > dangerous_boost:
+                    dangerous_boost = boost
+                    dangerous_reason_suffix = f" [{label}]"
+        if dangerous_boost > 0:
+            exposure += dangerous_boost
+            reason = reason + dangerous_reason_suffix
+        else:
+            exposure += 0.1  # generic query string bump
 
     # Static assets have lower exposure to dynamic vulnerability
     if any(path.endswith(ext) for ext in [".css", ".png", ".jpg", ".svg", ".ico", ".woff"]):

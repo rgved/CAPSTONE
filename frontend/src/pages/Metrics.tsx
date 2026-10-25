@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
 import type { MetricsData } from "../types";
+import SecurityMetricsStrip from "../components/common/SecurityMetricsStrip";
 import {
   LineChart,
   Line,
@@ -16,28 +17,27 @@ import {
   Legend
 } from "recharts";
 import {
-  Target,
-  ShieldAlert,
-  Percent,
-  Clock,
-  Info
+  Layers,
+  Activity,
+  ShieldCheck,
+  Compass
 } from "lucide-react";
 
-const COLORS = ["#3B82F6", "#22C55E", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
+const COLORS = ["#38BDF8", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#6366F1"];
 
 export default function Metrics() {
   const { data, isLoading } = useQuery<MetricsData>({
     queryKey: ["metrics"],
     queryFn: api.getMetrics,
-    refetchInterval: 5000 // Poll live to show new runs dynamically
+    refetchInterval: 5000
   });
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#0B1220] min-h-[500px]">
+      <div className="flex-1 flex items-center justify-center bg-[#090D16] min-h-[500px]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-t-transparent border-[#3B82F6] animate-spin"></div>
-          <span className="text-[#94A3B8] text-sm font-medium">Crunching evaluation metrics...</span>
+          <div className="w-10 h-10 rounded-full border-2 border-t-transparent border-[#38BDF8] animate-spin"></div>
+          <span className="text-[#94A3B8] text-xs font-mono uppercase tracking-wider">Aggregating Security Telemetry...</span>
         </div>
       </div>
     );
@@ -54,96 +54,54 @@ export default function Metrics() {
     mission_runtime_trend: []
   };
 
+
+
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#F8FAFC]">Research Analytics & Evaluation</h1>
-        <p className="text-sm text-[#94A3B8] mt-1">Token efficiency and runtime analysis supporting the selective retrieval hypothesis.</p>
+      <div className="border-b border-[#1E293B] pb-6">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-2xl font-bold tracking-tight text-[#F8FAFC]">Security Telemetry & Surface Intelligence</h1>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
+            <Activity className="w-3 h-3 text-[#38BDF8]" />
+            Live Analytics
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20">
+            Avg Runtime: {metrics.avg_runtime}s
+          </span>
+        </div>
+        <p className="text-xs text-[#94A3B8] mt-1">Telemetry overview of evaluated assets, severity breakdown, and reconnaissance performance.</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {/* Total Missions */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Total Missions</p>
-          <h3 className="text-3xl font-bold text-[#F8FAFC] mt-2">{metrics.total_missions}</h3>
-          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-[#3B82F6] font-medium">
-            <Target className="w-3.5 h-3.5" /> Full explorative runs
-          </div>
-        </div>
-
-        {/* Total Findings */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Total Findings</p>
-          <h3 className="text-3xl font-bold text-[#F8FAFC] mt-2">{metrics.total_findings}</h3>
-          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-[#EF4444] font-medium">
-            <ShieldAlert className="w-3.5 h-3.5" /> Discovered observations
-          </div>
-        </div>
-
-        {/* Average Runtime */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Average Runtime</p>
-          <h3 className="text-3xl font-bold text-[#F8FAFC] mt-2">{metrics.avg_runtime}s</h3>
-          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-[#F59E0B] font-medium">
-            <Clock className="w-3.5 h-3.5" /> Mean execution duration
-          </div>
-        </div>
-
-        {/* Average Token Reduction */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Average Token Reduction</p>
-          <h3 className="text-3xl font-bold text-[#F8FAFC] mt-2">{metrics.avg_token_reduction}%</h3>
-          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-[#22C55E] font-medium">
-            <Percent className="w-3.5 h-3.5" /> Selective Fetch token savings
-          </div>
-        </div>
-      </div>
+      {/* Common Global Telemetry Strip */}
+      <SecurityMetricsStrip variant="full" />
 
       {/* Grid: Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Chart 1: Token Reduction By Mission */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-[#F8FAFC]">Token Reduction by Mission</h3>
-            <span className="text-[10px] text-[#22C55E] bg-[#22C55E]/10 px-2 py-0.5 rounded font-bold uppercase">Efficiency %</span>
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={metrics.token_reduction_by_mission} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <XAxis dataKey="mission_id" stroke="#94A3B8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} unit="%" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#111827", borderColor: "#1F2937" }}
-                  labelStyle={{ color: "#F8FAFC" }}
-                />
-                <Line type="monotone" dataKey="reduction" stroke="#22C55E" strokeWidth={3} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Chart 2: Findings by Severity */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-[#F8FAFC]">Findings by Severity</h3>
-            <span className="text-[10px] text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded font-bold uppercase">Risk Breakdown</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Chart 1: Findings by Severity */}
+        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1E293B]">
+            <div>
+              <h3 className="text-sm font-bold text-[#F8FAFC]">Vulnerability Distribution by Severity</h3>
+              <p className="text-[11px] text-[#64748B] mt-0.5">Exploitability risk spectrum across all completed scans</p>
+            </div>
+            <span className="text-[10px] text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 px-2 py-0.5 rounded font-bold uppercase">Risk Spectrum</span>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metrics.findings_by_severity} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <XAxis dataKey="severity" stroke="#94A3B8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} allowDecimals={false} />
+                <XAxis dataKey="severity" stroke="#64748B" fontSize={11} tickLine={false} />
+                <YAxis stroke="#64748B" fontSize={11} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#111827", borderColor: "#1F2937" }}
-                  labelStyle={{ color: "#F8FAFC" }}
+                  contentStyle={{ backgroundColor: "#0F172A", borderColor: "#1E293B", borderRadius: "8px", fontSize: "12px" }}
+                  labelStyle={{ color: "#F8FAFC", fontWeight: "bold" }}
                 />
-                <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" fill="#38BDF8" radius={[4, 4, 0, 0]}>
                   {metrics.findings_by_severity.map((entry, index) => {
-                    const color = entry.severity === "High" ? "#EF4444" :
+                    const color = entry.severity === "Critical" ? "#DC2626" :
+                                  entry.severity === "High" ? "#EF4444" :
                                   entry.severity === "Medium" ? "#F59E0B" :
-                                  entry.severity === "Low" ? "#EAB308" : "#3B82F6";
+                                  entry.severity === "Low" ? "#EAB308" : "#38BDF8";
                     return <Cell key={`cell-${index}`} fill={color} />;
                   })}
                 </Bar>
@@ -151,15 +109,42 @@ export default function Metrics() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Chart 2: Mission Runtime Trend */}
+        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1E293B]">
+            <div>
+              <h3 className="text-sm font-bold text-[#F8FAFC]">Reconnaissance Latency Trend</h3>
+              <p className="text-[11px] text-[#64748B] mt-0.5">End-to-end mission runtime duration across historical runs</p>
+            </div>
+            <span className="text-[10px] text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/30 px-2 py-0.5 rounded font-bold uppercase">Latency (s)</span>
+          </div>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={metrics.mission_runtime_trend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <XAxis dataKey="mission_id" stroke="#64748B" fontSize={11} tickLine={false} />
+                <YAxis stroke="#64748B" fontSize={11} tickLine={false} unit="s" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0F172A", borderColor: "#1E293B", borderRadius: "8px", fontSize: "12px" }}
+                  labelStyle={{ color: "#F8FAFC", fontWeight: "bold" }}
+                />
+                <Line type="monotone" dataKey="runtime" stroke="#F59E0B" strokeWidth={2.5} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Grid: Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Chart 3: Feature Distribution */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-[#F8FAFC]">Feature Distribution</h3>
-            <span className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 px-2 py-0.5 rounded font-bold uppercase">App Coverage</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Chart 3: Attack Surface Distribution */}
+        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1E293B]">
+            <div>
+              <h3 className="text-sm font-bold text-[#F8FAFC]">Classified Surface Distribution</h3>
+              <p className="text-[11px] text-[#64748B] mt-0.5">Application components evaluated by feature classification workers</p>
+            </div>
+            <span className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 px-2 py-0.5 rounded font-bold uppercase">Component Share</span>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -171,9 +156,9 @@ export default function Metrics() {
                   }))}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={55}
+                  outerRadius={75}
+                  paddingAngle={4}
                   dataKey="count"
                   nameKey="name"
                 >
@@ -182,7 +167,7 @@ export default function Metrics() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#111827", borderColor: "#1F2937" }}
+                  contentStyle={{ backgroundColor: "#0F172A", borderColor: "#1E293B", borderRadius: "8px", fontSize: "12px" }}
                   itemStyle={{ color: "#F8FAFC" }}
                 />
                 <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: 10, color: "#94A3B8" }} />
@@ -191,34 +176,51 @@ export default function Metrics() {
           </div>
         </div>
 
-        {/* Chart 4: Mission Runtime Trend */}
-        <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-[#F8FAFC]">Mission Runtime Trend</h3>
-            <span className="text-[10px] text-[#F59E0B] bg-[#F59E0B]/10 px-2 py-0.5 rounded font-bold uppercase">Latency (s)</span>
+        {/* Telemetry Operational Card */}
+        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#1E293B]">
+              <div>
+                <h3 className="text-sm font-bold text-[#F8FAFC]">Autonomous Pipeline Architecture</h3>
+                <p className="text-[11px] text-[#64748B] mt-0.5">Distributed multi-worker execution pipeline overview</p>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30 text-[10px] font-bold">
+                Healthy
+              </span>
+            </div>
+
+            <div className="space-y-3 mt-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+                <div className="flex items-center gap-2.5">
+                  <Compass className="w-4 h-4 text-[#38BDF8]" />
+                  <span className="text-xs font-semibold text-[#F8FAFC]">Reconnaissance Worker</span>
+                </div>
+                <span className="text-[10px] text-[#64748B] font-mono">DOM & Route Parsing</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+                <div className="flex items-center gap-2.5">
+                  <Layers className="w-4 h-4 text-[#8B5CF6]" />
+                  <span className="text-xs font-semibold text-[#F8FAFC]">Feature Classifier</span>
+                </div>
+                <span className="text-[10px] text-[#64748B] font-mono">Structural Component Tagging</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+                  <span className="text-xs font-semibold text-[#F8FAFC]">Security Reasoning Agent</span>
+                </div>
+                <span className="text-[10px] text-[#64748B] font-mono">Vulnerability Discovery</span>
+              </div>
+            </div>
           </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={metrics.mission_runtime_trend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <XAxis dataKey="mission_id" stroke="#94A3B8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} unit="s" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#111827", borderColor: "#1F2937" }}
-                  labelStyle={{ color: "#F8FAFC" }}
-                />
-                <Line type="monotone" dataKey="runtime" stroke="#F59E0B" strokeWidth={3} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+
+          <div className="border-t border-[#1E293B] mt-5 pt-3 flex justify-between items-center text-[11px] text-[#64748B]">
+            <span>Automated SQLite persistence</span>
+            <span className="font-mono text-[10px]">Phase 8 Active Mode</span>
           </div>
         </div>
-      </div>
-
-      {/* Analysis notice */}
-      <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/10 text-xs text-[#94A3B8] flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-[#3B82F6] shrink-0 mt-0.5" />
-        <p className="leading-relaxed">
-          The Token Reduction and Runtime metrics are aggregated automatically from execution checkpoints saved to SQLite. In a typical scan, the Selective Fetch Service leverages local semantic similarity lookups (indexing headings, forms, inputs, and button structures) to prune the context before dispatching tasks to LLM reasoning workers. This reduces LLM token overheads while maintaining identical security reasoning capabilities.
-        </p>
       </div>
     </div>
   );

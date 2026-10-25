@@ -186,6 +186,7 @@ class FeatureExtractionAgent:
         return template.replace("{{RECON_OBSERVATIONS}}", observations)
 
     def _parse_llm_response(self, raw_response: str) -> dict[str, FeatureName | float]:
+        """Q3: Parse only 'feature' and 'confidence' — secondary_feature removed from prompt."""
         text = raw_response.strip()
         if text.startswith("```"):
             lines = text.splitlines()

@@ -37,3 +37,4 @@ class ReconResult(BaseModel):
     comments: list[str] = Field(default_factory=list)
     error_signatures: list[str] = Field(default_factory=list)
     reflected_parameters: list[dict[str, Any]] = Field(default_factory=list)
+    is_spa: bool = False

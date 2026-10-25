@@ -4,6 +4,8 @@ backend/agents/recon/recon_agent.py
 Recon Agent worker for structural extraction and worker-scoped failure handling.
 """
 import asyncio
+import re
+import ssl
 from typing import Any
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -99,9 +101,6 @@ class ReconAgent:
         import ssl
         
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        
         request = Request(
             url,
             headers={
@@ -111,6 +110,15 @@ class ReconAgent:
         )
         try:
             with urlopen(request, timeout=20, context=ctx) as response:
+                body = response.read()
+                encoding = response.headers.get_content_charset() or "utf-8"
+                self._last_headers = dict(response.headers)
+                self._last_status = response.status
+                return body.decode(encoding, errors="replace")
+        except ssl.SSLError as ssl_err:
+            logger.warning("SSL verification failed for %s: %s; falling back to unverified context for target assessment", url, ssl_err)
+            unverified_ctx = ssl._create_unverified_context()
+            with urlopen(request, timeout=20, context=unverified_ctx) as response:
                 body = response.read()
                 encoding = response.headers.get_content_charset() or "utf-8"
                 self._last_headers = dict(response.headers)
@@ -158,7 +166,8 @@ class ReconAgent:
         comments = self._extract_comments(soup)
         final_status = status_code if status_code != 200 else self._last_status
         error_signatures = self._extract_error_signatures(soup, html, final_status)
-        reflected_parameters = self._detect_reflected_parameters(url, html)
+        reflected_parameters = self._detect_reflected_parameters(url, html, soup=soup)
+        is_spa = self._detect_spa(soup, html)
 
         result = ReconResult(
             url=url,
@@ -176,6 +185,7 @@ class ReconAgent:
             comments=comments,
             error_signatures=error_signatures,
             reflected_parameters=reflected_parameters,
+            is_spa=is_spa,
         )
 
         logger.info(
@@ -277,12 +287,33 @@ class ReconAgent:
         message = str(exc).strip()
         return message or default
 
+    def _detect_spa(self, soup: BeautifulSoup, html: str) -> bool:
+        """Detect whether the page is a client-side rendered Single Page Application (SPA)."""
+        if soup.find(["div", "main", "section", "body"], id=lambda v: v in {"root", "app", "__next", "main-app"} if v else False):
+            return True
+        for script in soup.find_all("script"):
+            src = (script.get("src") or "").lower()
+            if any(marker in src for marker in ["/assets/index-", "chunk", "runtime", "_next/", "react", "vue", "vite"]):
+                return True
+        if "<div id=\"root\">" in html or "<div id=\"app\">" in html or "<div id=\"__next\">" in html:
+            return True
+        return False
+
     def _extract_links(self, soup: BeautifulSoup) -> list[str]:
         links: list[str] = []
         for tag in soup.find_all("a", href=True):
             href: str = tag["href"].strip()
-            if href and href != "#":
+            if href and href != "#" and href not in links:
                 links.append(href)
+
+        # Canonical & alternate navigation links
+        for tag in soup.find_all("link", href=True):
+            rel = tag.get("rel")
+            rel_str = " ".join(rel) if isinstance(rel, list) else str(rel or "").lower()
+            if any(k in rel_str for k in ["canonical", "alternate", "prerender", "prefetch"]):
+                href = tag["href"].strip()
+                if href and href != "#" and href not in links:
+                    links.append(href)
 
         for tag in soup.find_all(attrs={"data-href": True}):
             val = tag["data-href"].strip()
@@ -309,6 +340,16 @@ class ReconAgent:
             if "contact" in btn_text or "contact us" in btn_aria:
                 if "/contact" not in links:
                     links.append("/contact")
+
+        # Discover frontend routes defined in inline script blocks
+        for script in soup.find_all("script"):
+            content = script.get_text() or ""
+            if len(content) > 10 and len(content) < 50000:
+                matches = re.findall(r'["\'](/[\w\-]+(?:/[\w\-]+)*)["\']', content)
+                for m in matches:
+                    if not any(m.lower().endswith(ext) for ext in [".js", ".css", ".png", ".jpg", ".svg", ".ico", ".woff", ".woff2", ".json", ".map"]):
+                        if len(m) > 1 and len(m) < 60 and m not in links:
+                            links.append(m)
 
         return links
 
@@ -385,10 +426,6 @@ class ReconAgent:
                 "autocomplete": autocomplete,
             })
         return names, detailed
-
-    def _extract_inputs(self, soup: BeautifulSoup) -> list[str]:
-        names, _ = self._extract_input_fields(soup)
-        return names
 
     def _extract_buttons(self, soup: BeautifulSoup) -> list[str]:
         buttons: list[str] = []
@@ -474,20 +511,51 @@ class ReconAgent:
             signatures.append(f"HTTP {status_code} Internal Server Error")
         return signatures
 
-    def _detect_reflected_parameters(self, url: str, html: str) -> list[dict[str, Any]]:
+    def _detect_reflected_parameters(
+        self,
+        url: str,
+        html: str,
+        soup: BeautifulSoup | None = None,
+    ) -> list[dict[str, Any]]:
         reflected: list[dict[str, Any]] = []
         parsed = urlparse(url)
         if not parsed.query:
             return reflected
         from urllib.parse import parse_qs
         qs = parse_qs(parsed.query)
+        if not qs:
+            return reflected
+
+        doc_soup = soup if soup is not None else BeautifulSoup(html, "lxml")
+        script_texts = [s.get_text() for s in doc_soup.find_all("script")]
+
         for param, values in qs.items():
             for val in values:
                 if len(val) >= 3 and val in html:
+                    # I9: Determine reflection context (script vs attribute vs text)
+                    context = "text"
+                    if any(val in st for st in script_texts):
+                        context = "script"
+                    else:
+                        in_attr = False
+                        for tag in doc_soup.find_all():
+                            for _, attr_val in tag.attrs.items():
+                                if isinstance(attr_val, str) and val in attr_val:
+                                    in_attr = True
+                                    break
+                                elif isinstance(attr_val, list) and any(val in item for item in attr_val):
+                                    in_attr = True
+                                    break
+                            if in_attr:
+                                break
+                        if in_attr:
+                            context = "attribute"
+
                     reflected.append({
                         "param": param,
                         "value": val,
                         "reflected": True,
+                        "context": context,
                     })
         return reflected
 

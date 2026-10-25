@@ -14,7 +14,8 @@ Rules:
   sensitive_input, vulnerable_dependency, missing_subresource_integrity,
   verbose_error_leak, unknown
 - Supported severities:
-  informational, low, medium, high
+  informational, low, medium, high, critical
+  (Use critical only for: unauthenticated admin/actuator access, heap dump endpoints, SQL error dumps with schema data)
 - Confidence must be between 0.0 and 1.0.
 - Findings should be persisted only when confidence is at least 0.70.
 

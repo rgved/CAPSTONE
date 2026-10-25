@@ -43,7 +43,7 @@ _ALLOWED_CATEGORIES: set[str] = {
     "verbose_error_leak",
     "unknown",
 }
-_ALLOWED_SEVERITIES: set[str] = {"informational", "low", "medium", "high"}
+_ALLOWED_SEVERITIES: set[str] = {"informational", "low", "medium", "high", "critical"}
 _FINDING_THRESHOLD = 0.70
 
 
@@ -407,7 +407,9 @@ class AnalysisAgent:
                 items.append(item.model_dump())
         return items
 
-    def _load_json(self, raw_response: str) -> dict[str, Any]:
+    def _load_json(self, raw_response: str) -> dict[str, Any] | list[Any]:
+        """F4: Return dict OR list — previously rejected lists, making the list
+        branch in _parse_llm_response unreachable. Now both are valid."""
         candidate = raw_response.strip()
         if candidate.startswith("```"):
             candidate = self._strip_fence(candidate)
@@ -415,8 +417,8 @@ class AnalysisAgent:
             parsed = json.loads(candidate)
         except json.JSONDecodeError as exc:
             raise ValueError("LLM response was not valid JSON") from exc
-        if not isinstance(parsed, dict):
-            raise ValueError("LLM response must be a JSON object")
+        if not isinstance(parsed, (dict, list)):
+            raise ValueError("LLM response must be a JSON object or array")
         return parsed
 
     def _strip_fence(self, text: str) -> str:

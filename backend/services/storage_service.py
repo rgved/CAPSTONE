@@ -11,6 +11,7 @@ from typing import Optional
 import contextvars
 
 current_mission_id = contextvars.ContextVar("current_mission_id", default=None)
+current_username = contextvars.ContextVar("current_username", default=None)
 
 from backend.memory.sqlite.database import get_connection
 from backend.models.feature import Feature
@@ -128,8 +129,97 @@ def get_features(db_path: Optional[str] = None) -> list[Feature]:
         conn.close()
 
 
+def save_mission(
+    mission_id: str,
+    target_url: str,
+    status: str = "running",
+    started_at: Optional[str] = None,
+    finished_at: Optional[str] = None,
+    username: Optional[str] = None,
+    db_path: Optional[str] = None,
+) -> None:
+    """I1: Save or update a mission in the missions table."""
+    conn = get_connection(db_path)
+    started_str = started_at or datetime.utcnow().isoformat()
+    u_name = username or current_username.get()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO missions (mission_id, target_url, status, started_at, finished_at, username)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(mission_id) DO UPDATE SET
+                target_url = excluded.target_url,
+                status = excluded.status,
+                finished_at = COALESCE(excluded.finished_at, missions.finished_at),
+                username = COALESCE(excluded.username, missions.username)
+            """,
+            (mission_id, target_url, status, started_str, finished_at, u_name),
+        )
+        conn.commit()
+        logger.info("Mission saved - id=%s target=%s status=%s username=%s", mission_id, target_url, status, u_name)
+    finally:
+        conn.close()
+
+
+def update_mission_status(
+    mission_id: str,
+    status: str,
+    finished_at: Optional[str] = None,
+    db_path: Optional[str] = None,
+) -> None:
+    """I1: Update the status and optional finished timestamp for a mission."""
+    conn = get_connection(db_path)
+    finished_str = finished_at or (datetime.utcnow().isoformat() if status in ("completed", "failed") else None)
+    try:
+        cursor = conn.cursor()
+        if finished_str:
+            cursor.execute(
+                "UPDATE missions SET status = ?, finished_at = ? WHERE mission_id = ?",
+                (status, finished_str, mission_id),
+            )
+        else:
+            cursor.execute(
+                "UPDATE missions SET status = ? WHERE mission_id = ?",
+                (status, mission_id),
+            )
+        conn.commit()
+        logger.info("Mission updated - id=%s status=%s", mission_id, status)
+    finally:
+        conn.close()
+
+
+def get_missions(db_path: Optional[str] = None) -> list[dict]:
+    """I1: Retrieve all missions ordered by id DESC."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, mission_id, target_url, status, started_at, finished_at FROM missions ORDER BY id DESC"
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_mission(mission_id: str, db_path: Optional[str] = None) -> Optional[dict]:
+    """I1: Retrieve a single mission by mission_id."""
+    conn = get_connection(db_path)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, mission_id, target_url, status, started_at, finished_at FROM missions WHERE mission_id = ?",
+            (mission_id,),
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
 def save_finding(finding: Finding, db_path: Optional[str] = None, mission_id: Optional[str] = None) -> Finding:
-    """Persist a Finding to the findings table."""
+    """Persist a Finding to the findings table with a single atomic commit (R2)."""
     conn = get_connection(db_path)
     m_id = mission_id or current_mission_id.get()
     try:
@@ -156,14 +246,15 @@ def save_finding(finding: Finding, db_path: Optional[str] = None, mission_id: Op
                 m_id,
             ),
         )
-        conn.commit()
         row_id: int = cursor.lastrowid  # type: ignore[assignment]
-        saved = finding.model_copy(update={"finding_id": _format_finding_id(row_id)})
-        cursor.execute(
-            "UPDATE findings SET finding_id = ? WHERE id = ?",
-            (saved.finding_id, row_id),
-        )
+        finding_id = finding.finding_id or _format_finding_id(row_id)
+        if not finding.finding_id:
+            cursor.execute(
+                "UPDATE findings SET finding_id = ? WHERE id = ?",
+                (finding_id, row_id),
+            )
         conn.commit()
+        saved = finding.model_copy(update={"finding_id": finding_id})
         logger.info("Finding saved - id=%s title=%s severity=%s mission_id=%s", saved.finding_id, saved.title, saved.severity, m_id)
         return saved
     finally:
@@ -206,7 +297,7 @@ def get_findings(db_path: Optional[str] = None) -> list[Finding]:
 
 
 def save_report(report: SecurityReport, db_path: Optional[str] = None) -> SecurityReport:
-    """Persist a SecurityReport to the reports table."""
+    """Persist a SecurityReport to the reports table with a single atomic commit (R2)."""
     conn = get_connection(db_path)
     try:
         cursor = conn.cursor()
@@ -224,13 +315,14 @@ def save_report(report: SecurityReport, db_path: Optional[str] = None) -> Securi
                 report_json,
             ),
         )
-        conn.commit()
         row_id: int = cursor.lastrowid  # type: ignore[assignment]
-        saved = report.model_copy(update={"report_id": _format_report_id(row_id)})
-        cursor.execute(
-            "UPDATE reports SET report_id = ?, report_json = ? WHERE id = ?",
-            (saved.report_id, saved.model_dump_json(), row_id),
-        )
+        report_id = report.report_id or _format_report_id(row_id)
+        saved = report.model_copy(update={"report_id": report_id})
+        if not report.report_id:
+            cursor.execute(
+                "UPDATE reports SET report_id = ?, report_json = ? WHERE id = ?",
+                (saved.report_id, saved.model_dump_json(), row_id),
+            )
         conn.commit()
         logger.info("Report saved - id=%s mission_id=%s", saved.report_id, saved.mission_id)
         return saved

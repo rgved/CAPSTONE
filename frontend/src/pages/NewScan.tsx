@@ -62,10 +62,10 @@ const STEPS: StepConfig[] = [
   },
   {
     key: "efficient_fetch",
-    label: "Efficient Fetch & Compression",
+    label: "Contextual Surface Retrieval",
     taskName: "RUN_EFFICIENT_FETCH",
-    description: "Compress token payload and optimize selective context retrieval",
-    activeStatusText: "Performing semantic chunking & token reduction optimization...",
+    description: "Extract focused structural contexts and evaluate relevant attack surfaces",
+    activeStatusText: "Performing semantic structure ranking and contextual surface extraction...",
     icon: <Zap className="w-4 h-4" />
   },
   {
@@ -94,6 +94,7 @@ const SAMPLE_TARGETS = [
 
 export default function NewScan() {
   const [url, setUrl] = useState("");
+  const [maxPages, setMaxPages] = useState(5);
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
   const [missionId, setMissionId] = useState<string | null>(null);
@@ -133,7 +134,7 @@ export default function NewScan() {
         report_generation: "pending"
       });
 
-      const res = await api.startScan(targetUrl);
+      const res = await api.startScan(targetUrl, maxPages);
       setMissionId(res.mission_id);
       if (customUrl) setUrl(customUrl);
     } catch (err: any) {
@@ -283,6 +284,30 @@ export default function NewScan() {
                   >
                     <Globe className="w-3 h-3 text-[#3B82F6]" />
                     {sample}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Crawl Scope Selector (I8) */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider flex items-center justify-between">
+                <span>Crawl Scope (Max Routes)</span>
+                <span className="text-xs text-[#38BDF8] font-bold">{maxPages} {maxPages === 1 ? "Route" : "Routes"}</span>
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {[1, 3, 5, 10, 15].map((pages) => (
+                  <button
+                    key={pages}
+                    type="button"
+                    onClick={() => setMaxPages(pages)}
+                    className={`py-2 px-2 rounded-lg text-xs font-bold border transition-all text-center ${
+                      maxPages === pages
+                        ? "bg-[#3B82F6]/20 border-[#3B82F6] text-[#38BDF8] shadow-sm shadow-blue-500/10"
+                        : "bg-[#0B1220] border-[#1F2937] text-[#94A3B8] hover:border-[#374151] hover:text-[#F8FAFC]"
+                    }`}
+                  >
+                    {pages} {pages === 1 ? "Page" : "Pages"}
                   </button>
                 ))}
               </div>
@@ -521,10 +546,10 @@ export default function NewScan() {
                   <div className="text-[11px] text-[#94A3B8] mt-0.5">Findings Identified</div>
                 </div>
                 <div className="p-3 bg-[#111827] border border-[#1F2937] rounded-lg">
-                  <div className="text-lg font-bold text-[#22C55E]">
-                    {missionDetail.token_reduction?.reduction_percentage || 0}%
+                  <div className="text-lg font-bold text-[#3B82F6]">
+                    {missionDetail.runtime || "Complete"}
                   </div>
-                  <div className="text-[11px] text-[#94A3B8] mt-0.5">Token Reduction</div>
+                  <div className="text-[11px] text-[#94A3B8] mt-0.5">Scan Runtime</div>
                 </div>
               </div>
             </div>

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../services/api";
 import type { Finding } from "../types";
+import SecurityMetricsStrip from "../components/common/SecurityMetricsStrip";
 import {
   ShieldAlert,
   Search,
@@ -10,32 +11,81 @@ import {
   X,
   ExternalLink,
   ClipboardCheck,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Database,
+  BrainCircuit,
+  Layers,
+  Compass,
+  Cpu,
+  RefreshCw,
+  Zap
 } from "lucide-react";
 
 export default function Findings() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") === "memory" ? "memory" : "registry";
+
+  const setActiveTab = (tab: "registry" | "memory") => {
+    if (tab === "memory") {
+      setSearchParams({ tab: "memory" });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  // Findings Filters State
   const [severity, setSeverity] = useState("all");
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
 
-  // Fetch findings
-  const { data: findings, isLoading } = useQuery<Finding[]>({
+  // Semantic Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [collection, setCollection] = useState("findings");
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  // 1. Fetch Findings Registry
+  const { data: findings, isLoading: isFindingsLoading } = useQuery<Finding[]>({
     queryKey: ["findings", severity, category, search],
     queryFn: () => api.getFindings(severity, category, search),
-    refetchInterval: 5000 // Keep findings list updated
+    refetchInterval: 5000
   });
 
+  // 2. Fetch Semantic Memory Summary
+  const { data: memorySummary, isLoading: isMemoryLoading, refetch: refetchMemory } = useQuery({
+    queryKey: ["memory-summary"],
+    queryFn: api.getMemorySummary,
+    refetchInterval: 10000
+  });
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    try {
+      setSearching(true);
+      const res = await api.searchMemory(searchQuery, collection);
+      setSearchResults(res.results || []);
+    } catch (err) {
+      console.error("Semantic search failed", err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const getSeverityStyle = (sev: string) => {
-    switch (sev.toLowerCase()) {
+    switch (sev?.toLowerCase()) {
+      case "critical":
+        return "bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/30";
       case "high":
-        return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20";
+        return "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30";
       case "medium":
-        return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20";
+        return "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30";
       case "low":
-        return "bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/20";
+        return "bg-[#EAB308]/10 text-[#EAB308] border-[#EAB308]/30";
       default:
-        return "bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20";
+        return "bg-[#38BDF8]/10 text-[#38BDF8] border-[#38BDF8]/30";
     }
   };
 
@@ -53,248 +103,604 @@ export default function Findings() {
     { label: "Verbose Error Leaks", value: "verbose_error_leak" },
   ];
 
+  const totalCount = findings?.length ?? 0;
+  const totalVectors =
+    (memorySummary?.counts?.findings_indexed ?? 0) +
+    (memorySummary?.counts?.features_indexed ?? 0) +
+    (memorySummary?.counts?.routes_indexed ?? 0);
+
   return (
     <div className="space-y-8 animate-fadeIn relative min-h-screen">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1E293B] pb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#F8FAFC]">Findings Explorer</h1>
-          <p className="text-sm text-[#94A3B8] mt-1">Cross-mission registry of all security findings discovered across target domains.</p>
-        </div>
-        <div className="flex items-center gap-2 bg-[#A855F7]/10 border border-[#A855F7]/20 px-3.5 py-2 rounded-xl text-xs text-[#E9D5FF] w-fit">
-          <Sparkles className="w-4 h-4 text-[#A855F7] shrink-0" />
-          <span><strong>Explainable AI Active:</strong> Every finding includes reasoning & evidence breakdown.</span>
-        </div>
-      </div>
-
-      {/* Filters Panel */}
-      <div className="bg-[#111827] border border-[#1F2937] p-6 rounded-xl space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search findings by title, description, ID..."
-            className="w-full bg-[#0B1220] border border-[#1F2937] rounded-lg pl-10 pr-4 py-2 text-xs text-[#F8FAFC] placeholder-[#94A3B8] focus:border-[#3B82F6] outline-none transition-all"
-          />
-        </div>
-
-        {/* Dropdowns */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Severity */}
-          <div className="flex items-center gap-2 bg-[#0B1220] border border-[#1F2937] px-3 py-1.5 rounded-lg focus-within:border-[#3B82F6] transition-all">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#94A3B8]" />
-            <select
-              value={severity}
-              onChange={(e) => setSeverity(e.target.value)}
-              className="bg-[#0B1220] text-xs text-[#F8FAFC] font-semibold outline-none border-none cursor-pointer pr-1"
-            >
-              <option value="all" className="bg-[#111827] text-[#F8FAFC]">All Severities</option>
-              <option value="high" className="bg-[#111827] text-[#EF4444] font-semibold">High</option>
-              <option value="medium" className="bg-[#111827] text-[#F59E0B] font-semibold">Medium</option>
-              <option value="low" className="bg-[#111827] text-[#EAB308] font-semibold">Low</option>
-            </select>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-[#F8FAFC]">Security Findings Explorer</h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
+              <ShieldAlert className="w-3.5 h-3.5 text-[#38BDF8]" />
+              {totalCount} Active Findings
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#8B5CF6]/10 text-[#A78BFA] border border-[#8B5CF6]/20">
+              <BrainCircuit className="w-3.5 h-3.5 text-[#8B5CF6]" />
+              {totalVectors} Embedded Vectors
+            </span>
           </div>
+          <p className="text-xs text-[#94A3B8] mt-1">
+            Unified registry of discovered vulnerabilities, evidence logs, and ChromaDB semantic memory powering cross-mission intelligence.
+          </p>
+        </div>
 
-          {/* Category */}
-          <div className="flex items-center gap-2 bg-[#0B1220] border border-[#1F2937] px-3 py-1.5 rounded-lg focus-within:border-[#3B82F6] transition-all">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#94A3B8]" />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="bg-[#0B1220] text-xs text-[#F8FAFC] font-semibold outline-none border-none cursor-pointer pr-1"
-            >
-              {categories.map((c) => (
-                <option key={c.value} value={c.value} className="bg-[#111827] text-[#F8FAFC]">
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex items-center gap-2 bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 px-3.5 py-2 rounded-xl text-xs text-[#DDD6FE] w-fit">
+          <Sparkles className="w-4 h-4 text-[#8B5CF6] shrink-0" />
+          <span><strong>Explainable AI Active:</strong> Automated reasoning and semantic vector retrieval attached to each finding.</span>
         </div>
       </div>
 
-      {/* Findings Table */}
-      <div className="bg-[#111827] border border-[#1F2937] rounded-xl overflow-hidden">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-10 h-10 rounded-full border-4 border-t-transparent border-[#3B82F6] animate-spin"></div>
-            <span className="text-[#94A3B8] text-xs font-semibold mt-4">Filtering observations...</span>
+      {/* Unified Platform Metrics Strip */}
+      <SecurityMetricsStrip variant="full" />
+
+      {/* Segmented View Switcher Tabs */}
+      <div className="flex items-center gap-3 border-b border-[#1E293B] pb-4">
+        <button
+          onClick={() => setActiveTab("registry")}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "registry"
+              ? "bg-[#0284C7] text-white shadow-lg shadow-sky-500/20"
+              : "bg-[#0F172A] border border-[#1E293B] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-[#38BDF8]/40"
+          }`}
+        >
+          <ShieldAlert className="w-4 h-4" />
+          <span>Active Findings Registry</span>
+          <span className="ml-1 px-2 py-0.5 rounded-md text-[10px] bg-black/25 text-[#F8FAFC] font-mono">
+            {totalCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("memory")}
+          className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "memory"
+              ? "bg-[#0284C7] text-white shadow-lg shadow-sky-500/20"
+              : "bg-[#0F172A] border border-[#1E293B] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-[#38BDF8]/40"
+          }`}
+        >
+          <BrainCircuit className="w-4 h-4" />
+          <span>Semantic Memory & Vector Intelligence</span>
+          <span className="ml-1 px-2 py-0.5 rounded-md text-[10px] bg-black/25 text-[#38BDF8] font-mono">
+            {totalVectors} vectors
+          </span>
+        </button>
+      </div>
+
+      {/* ==================== TAB 1: ACTIVE FINDINGS REGISTRY ==================== */}
+      {activeTab === "registry" && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Filters & Search Panel */}
+          <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4 shadow-sm">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search findings by title, description, ID..."
+                className="w-full bg-[#090D16] border border-[#1E293B] rounded-lg pl-10 pr-4 py-2 text-xs text-[#F8FAFC] placeholder-[#64748B] focus:border-[#38BDF8] outline-none transition-all"
+              />
+            </div>
+
+            {/* Dropdowns */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Severity Filter */}
+              <div className="flex items-center gap-2 bg-[#090D16] border border-[#1E293B] px-3 py-1.5 rounded-lg focus-within:border-[#38BDF8] transition-all">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#64748B]" />
+                <select
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value)}
+                  className="bg-[#090D16] text-xs text-[#F8FAFC] font-semibold outline-none border-none cursor-pointer pr-1"
+                >
+                  <option value="all" className="bg-[#0F172A] text-[#F8FAFC]">All Severities</option>
+                  <option value="critical" className="bg-[#0F172A] text-[#DC2626] font-semibold">Critical</option>
+                  <option value="high" className="bg-[#0F172A] text-[#EF4444] font-semibold">High</option>
+                  <option value="medium" className="bg-[#0F172A] text-[#F59E0B] font-semibold">Medium</option>
+                  <option value="low" className="bg-[#0F172A] text-[#EAB308] font-semibold">Low</option>
+                  <option value="informational" className="bg-[#0F172A] text-[#38BDF8] font-semibold">Informational</option>
+                </select>
+              </div>
+
+              {/* Category Filter */}
+              <div className="flex items-center gap-2 bg-[#090D16] border border-[#1E293B] px-3 py-1.5 rounded-lg focus-within:border-[#38BDF8] transition-all">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="bg-[#090D16] text-xs text-[#F8FAFC] font-semibold outline-none border-none cursor-pointer pr-1"
+                >
+                  {categories.map((c) => (
+                    <option key={c.value} value={c.value} className="bg-[#0F172A] text-[#F8FAFC]">
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {(severity !== "all" || category !== "all" || search) && (
+                <button
+                  onClick={() => {
+                    setSeverity("all");
+                    setCategory("all");
+                    setSearch("");
+                  }}
+                  className="px-2.5 py-1 text-xs text-[#EF4444] hover:bg-[#EF4444]/10 rounded border border-[#EF4444]/20 transition-all font-semibold"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
           </div>
-        ) : !findings || findings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-2">
-            <ShieldAlert className="w-12 h-12 text-[#94A3B8] stroke-1 animate-pulse" />
-            <p className="text-sm font-semibold text-[#F8FAFC]">No findings generated yet.</p>
-            <p className="text-xs text-[#94A3B8]">Try tweaking your filter options or run a new scan.</p>
+
+          {/* Findings Table */}
+          <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl overflow-hidden shadow-sm">
+            {isFindingsLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-10 h-10 rounded-full border-2 border-t-transparent border-[#38BDF8] animate-spin"></div>
+                <span className="text-[#64748B] text-xs font-semibold mt-4">Filtering observations...</span>
+              </div>
+            ) : !findings || findings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-2">
+                <ShieldCheck className="w-12 h-12 text-[#10B981] stroke-1 animate-pulse" />
+                <p className="text-sm font-semibold text-[#F8FAFC]">No matching findings detected.</p>
+                <p className="text-xs text-[#64748B]">Adjust filters above or launch a new scan against a target.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-[#090D16] border-b border-[#1E293B] text-[#64748B] font-bold uppercase tracking-wider text-[10px]">
+                      <th className="p-4">Finding ID</th>
+                      <th className="p-4">Title & Reasoning Summary</th>
+                      <th className="p-4">Severity</th>
+                      <th className="p-4">Mission</th>
+                      <th className="p-4">Confidence</th>
+                      <th className="p-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1E293B]/60">
+                    {[...findings]
+                      .sort((a, b) => {
+                        const severityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1, informational: 0 };
+                        const weightA = severityOrder[a.severity?.toLowerCase()] ?? 0;
+                        const weightB = severityOrder[b.severity?.toLowerCase()] ?? 0;
+                        return weightB - weightA;
+                      })
+                      .map((f) => (
+                        <tr
+                          key={f.finding_id}
+                          className="hover:bg-[#1E293B]/30 transition-all cursor-pointer group"
+                          onClick={() => setSelectedFinding(f)}
+                        >
+                          <td className="p-4 font-mono font-bold text-[#38BDF8] whitespace-nowrap text-[11px]">{f.finding_id}</td>
+                          <td className="p-4">
+                            <div className="font-semibold text-[#F8FAFC]">{f.title}</div>
+                            {f.reasoning && (
+                              <div className="text-[11px] text-[#A855F7] line-clamp-1 italic mt-1 flex items-center gap-1.5">
+                                <Sparkles className="w-3 shrink-0" />
+                                <span className="truncate">{f.reasoning}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 whitespace-nowrap">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide border ${getSeverityStyle(f.severity)}`}>
+                              {f.severity}
+                            </span>
+                          </td>
+                          <td className="p-4 font-mono text-[#64748B] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <Link to={`/mission/${f.mission}`} className="hover:text-[#38BDF8] hover:underline inline-flex items-center gap-1">
+                              {f.mission} <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          </td>
+                          <td className="p-4 whitespace-nowrap">
+                            <span className="font-mono text-[#10B981] font-semibold text-[11px]">
+                              {Math.round((f.confidence > 1 ? f.confidence : f.confidence * 100))}%
+                            </span>
+                          </td>
+                          <td className="p-4 text-right whitespace-nowrap">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFinding(f);
+                              }}
+                              className="px-2.5 py-1 bg-[#1E293B] group-hover:bg-[#0284C7] group-hover:text-white rounded text-[11px] font-semibold text-[#94A3B8] transition-all"
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="bg-[#1F2937]/25 border-b border-[#1F2937] text-[#94A3B8] font-bold uppercase tracking-wider">
-                  <th className="p-4">Finding ID</th>
-                  <th className="p-4">Title & Explainable Reasoning</th>
-                  <th className="p-4">Severity</th>
-                  <th className="p-4">Mission</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1F2937]">
-                {[...findings]
-                  .sort((a, b) => {
-                    const severityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, informational: 0 };
-                    const weightA = severityOrder[a.severity?.toLowerCase()] ?? 0;
-                    const weightB = severityOrder[b.severity?.toLowerCase()] ?? 0;
-                    return weightB - weightA;
-                  })
-                  .map((f) => (
-                  <tr
-                    key={f.finding_id}
-                    className="hover:bg-[#1F2937]/20 transition-all cursor-pointer group"
-                    onClick={() => setSelectedFinding(f)}
+        </div>
+      )}
+
+      {/* ==================== TAB 2: SEMANTIC VECTOR MEMORY ==================== */}
+      {activeTab === "memory" && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Top Memory Banner Actions */}
+          <div className="flex items-center justify-between bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl">
+            <div>
+              <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
+                <Database className="w-4 h-4 text-[#38BDF8]" /> ChromaDB Vector RAG Store Status
+              </h3>
+              <p className="text-xs text-[#94A3B8] mt-0.5">
+                Multi-collection embeddings index prior reconnaissance observations to elevate accuracy on subsequent runs.
+              </p>
+            </div>
+            <button
+              onClick={() => refetchMemory()}
+              className="flex items-center gap-2 px-3.5 py-2 bg-[#090D16] hover:bg-[#1E293B] border border-[#1E293B] rounded-xl text-xs font-semibold text-[#94A3B8] hover:text-[#F8FAFC] transition-all"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh Store
+            </button>
+          </div>
+
+          {/* Vector Collection Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#0F172A] border border-[#1E293B] p-6 rounded-xl relative overflow-hidden group hover:border-[#EF4444]/50 transition-all shadow-sm">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Findings Collection</p>
+                  <h3 className="text-3xl font-extrabold text-[#F8FAFC] mt-2">
+                    {isMemoryLoading ? "..." : memorySummary?.counts?.findings_indexed ?? 0}
+                  </h3>
+                </div>
+                <div className="p-3 bg-[#EF4444]/10 rounded-xl text-[#EF4444] border border-[#EF4444]/20">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-[#1E293B]/60 text-[11px] text-[#94A3B8]">
+                <span>Indexed vulnerability reasoning & evidence vectors</span>
+              </div>
+            </div>
+
+            <div className="bg-[#0F172A] border border-[#1E293B] p-6 rounded-xl relative overflow-hidden group hover:border-[#8B5CF6]/50 transition-all shadow-sm">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Features Collection</p>
+                  <h3 className="text-3xl font-extrabold text-[#F8FAFC] mt-2">
+                    {isMemoryLoading ? "..." : memorySummary?.counts?.features_indexed ?? 0}
+                  </h3>
+                </div>
+                <div className="p-3 bg-[#8B5CF6]/10 rounded-xl text-[#8B5CF6] border border-[#8B5CF6]/20">
+                  <Layers className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-[#1E293B]/60 text-[11px] text-[#94A3B8]">
+                <span>Semantic capability fingerprints & route patterns</span>
+              </div>
+            </div>
+
+            <div className="bg-[#0F172A] border border-[#1E293B] p-6 rounded-xl relative overflow-hidden group hover:border-[#38BDF8]/50 transition-all shadow-sm">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider">Routes Collection</p>
+                  <h3 className="text-3xl font-extrabold text-[#F8FAFC] mt-2">
+                    {isMemoryLoading ? "..." : memorySummary?.counts?.routes_indexed ?? 0}
+                  </h3>
+                </div>
+                <div className="p-3 bg-[#38BDF8]/10 rounded-xl text-[#38BDF8] border border-[#38BDF8]/20">
+                  <Compass className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-[#1E293B]/60 text-[11px] text-[#94A3B8]">
+                <span>Discovered URL endpoints & structural DOM summaries</span>
+              </div>
+            </div>
+          </div>
+
+          {/* How Future Missions Use Semantic Memory */}
+          <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-6 lg:p-8 space-y-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-[#38BDF8]/10 rounded-xl text-[#38BDF8] border border-[#38BDF8]/20">
+                <BrainCircuit className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-[#F8FAFC]">How Future Missions Use Semantic Memory</h2>
+                <p className="text-xs text-[#94A3B8]">Cross-mission memory transfers knowledge so each scan is smarter than the last.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-[#090D16] border border-[#1E293B] space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#38BDF8]">
+                  <Compass className="w-4 h-4" /> 1. Capability Matching
+                </div>
+                <p className="text-xs text-[#94A3B8] leading-relaxed">
+                  When encountering an ambiguous endpoint, the feature extractor queries ChromaDB vectors to find which capabilities similar pages mapped to in previous targets.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#090D16] border border-[#1E293B] space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#A855F7]">
+                  <Cpu className="w-4 h-4" /> 2. Few-Shot In-Context Injection
+                </div>
+                <p className="text-xs text-[#94A3B8] leading-relaxed">
+                  During <code className="text-[#F8FAFC] bg-[#1E293B] px-1 py-0.5 rounded">RUN_ANALYSIS</code>, the orchestrator retrieves the 3 closest past findings and supplies them to Groq LLM as historical evidence context.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#090D16] border border-[#1E293B] space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#10B981]">
+                  <Zap className="w-4 h-4" /> 3. High-Yield Crawl Elevation
+                </div>
+                <p className="text-xs text-[#94A3B8] leading-relaxed">
+                  The risk scorer boosts parameters and routes that share vector patterns with previously confirmed vulnerabilities, guiding the crawler toward fertile attack surfaces.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Semantic Search Bar */}
+          <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-6 lg:p-8 space-y-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+                  <Search className="w-4 h-4 text-[#38BDF8]" /> Query Vector Index
+                </h2>
+                <p className="text-xs text-[#94A3B8]">Test semantic similarity search across vector collections in real-time.</p>
+              </div>
+
+              {/* Collection Filter */}
+              <div className="flex bg-[#090D16] p-1 rounded-lg border border-[#1E293B] self-start sm:self-auto">
+                {["findings", "features", "routes"].map((col) => (
+                  <button
+                    key={col}
+                    type="button"
+                    onClick={() => {
+                      setCollection(col);
+                      setSearchResults(null);
+                    }}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition-all ${
+                      collection === col
+                        ? "bg-[#0284C7] text-white shadow"
+                        : "text-[#94A3B8] hover:text-[#F8FAFC]"
+                    }`}
                   >
-                    <td className="p-4 font-mono font-bold text-[#3B82F6] whitespace-nowrap">{f.finding_id}</td>
-                    <td className="p-4">
-                      <div className="font-semibold text-[#F8FAFC]">{f.title}</div>
-                      {f.reasoning && (
-                        <div className="text-[11px] text-[#A855F7] line-clamp-1 italic mt-1 flex items-center gap-1.5">
-                          <Sparkles className="w-3 mx-0 shrink-0" />
-                          <span className="truncate">{f.reasoning}</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide border ${getSeverityStyle(f.severity)}`}>
-                        {f.severity}
-                      </span>
-                    </td>
-                    <td className="p-4 font-mono text-[#94A3B8] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                      <Link to={`/mission/${f.mission}`} className="hover:text-[#3B82F6] hover:underline inline-flex items-center gap-1">
-                        {f.mission} <ExternalLink className="w-3 h-3" />
-                      </Link>
-                    </td>
-                    <td className="p-4 text-[#94A3B8] whitespace-nowrap">
-                      {f.date ? new Date(f.date).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="p-4 text-right whitespace-nowrap">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedFinding(f);
-                        }}
-                        className="px-3 py-1 bg-[#1F2937] group-hover:bg-[#3B82F6] group-hover:text-white rounded text-xs font-semibold transition-all"
-                      >
-                        Inspect
-                      </button>
-                    </td>
-                  </tr>
+                    {col}
+                  </button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            <form onSubmit={handleSearch} className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-[#64748B] absolute left-4 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={`Search ${collection} by meaning (e.g. "missing csrf token", "admin authentication", "file extension validation")...`}
+                  className="w-full bg-[#090D16] border border-[#1E293B] rounded-xl pl-11 pr-4 py-3 text-sm text-[#F8FAFC] placeholder-[#64748B] focus:border-[#38BDF8] focus:ring-2 focus:ring-[#38BDF8]/20 outline-none transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={searching}
+                className="px-6 py-3 bg-[#0284C7] hover:bg-[#0369A1] disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition-all flex items-center gap-2 shrink-0"
+              >
+                {searching ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                Vector Search
+              </button>
+            </form>
+
+            {/* Live Search Results */}
+            {searchResults !== null && (
+              <div className="space-y-3 pt-4 border-t border-[#1E293B]">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold text-[#94A3B8]">
+                    Matched {searchResults.length} {searchResults.length === 1 ? "document" : "documents"} for "{searchQuery}"
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchResults(null)}
+                    className="text-xs text-[#64748B] hover:text-[#94A3B8]"
+                  >
+                    Clear Results
+                  </button>
+                </div>
+
+                {searchResults.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-[#94A3B8] bg-[#090D16] rounded-xl border border-[#1E293B]">
+                    No vector matches found with current query threshold.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3">
+                    {searchResults.map((res, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-xl bg-[#090D16] border border-[#1E293B] hover:border-[#38BDF8]/40 transition-all space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-[#F8FAFC] bg-[#1E293B] px-2 py-0.5 rounded">
+                              {res.document_id}
+                            </span>
+                            {res.metadata?.severity && (
+                              <span
+                                className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getSeverityStyle(
+                                  res.metadata.severity
+                                )}`}
+                              >
+                                {res.metadata.severity}
+                              </span>
+                            )}
+                            {res.metadata?.feature && (
+                              <span className="text-[10px] text-[#94A3B8] bg-[#0F172A] px-2 py-0.5 rounded border border-[#1E293B]">
+                                {res.metadata.feature}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-mono font-bold text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded border border-[#10B981]/20">
+                            {res.similarity_score}% Match
+                          </span>
+                        </div>
+                        <p className="text-xs font-mono text-[#CBD5E1] whitespace-pre-wrap leading-relaxed line-clamp-3">
+                          {res.document}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Stored Historical Findings Preview */}
+          <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-6 lg:p-8 space-y-6 shadow-sm">
+            <div>
+              <h2 className="text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+                <Database className="w-4 h-4 text-[#38BDF8]" /> Stored Semantic Knowledge Base
+              </h2>
+              <p className="text-xs text-[#94A3B8]">Observations currently embedded and available to subsequent analysis workflows.</p>
+            </div>
+
+            {memorySummary?.recent_stored_findings?.length === 0 ? (
+              <div className="p-8 text-center text-xs text-[#94A3B8] bg-[#090D16] rounded-xl border border-[#1E293B]">
+                No findings indexed yet. Run your first mission to populate semantic memory!
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#1E293B] text-[#64748B] font-bold uppercase tracking-wider text-[10px]">
+                      <th className="p-3">ID</th>
+                      <th className="p-3">Title</th>
+                      <th className="p-3">Category</th>
+                      <th className="p-3">Feature Context</th>
+                      <th className="p-3">Severity</th>
+                      <th className="p-3">Embedded Excerpt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1E293B]/60">
+                    {memorySummary?.recent_stored_findings?.map((f: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-[#1E293B]/30 transition-colors">
+                        <td className="p-3 font-mono text-[#38BDF8] font-bold text-[11px]">{f.id}</td>
+                        <td className="p-3 font-semibold text-[#F8FAFC] max-w-[200px] truncate" title={f.title}>
+                          {f.title}
+                        </td>
+                        <td className="p-3 text-[#94A3B8]">{f.type}</td>
+                        <td className="p-3 text-[#94A3B8]">{f.feature}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${getSeverityStyle(f.severity)}`}>
+                            {f.severity}
+                          </span>
+                        </td>
+                        <td className="p-3 text-[#64748B] max-w-[320px] truncate font-mono text-[11px]" title={f.snippet}>
+                          {f.snippet}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Side Sliding Drawer Overlay */}
       {selectedFinding && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex justify-end animate-fadeIn">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-end animate-fadeIn">
           {/* Backdrop closer */}
           <div className="absolute inset-0" onClick={() => setSelectedFinding(null)}></div>
-          
+
           {/* Drawer Body */}
-          <div className="w-full max-w-xl bg-[#111827] border-l border-[#1F2937] p-8 z-10 overflow-y-auto space-y-6 flex flex-col justify-between shadow-2xl relative animate-slideLeft">
+          <div className="w-full max-w-xl bg-[#0F172A] border-l border-[#1E293B] p-8 z-10 overflow-y-auto space-y-6 flex flex-col justify-between shadow-2xl relative animate-slideLeft">
             <button
               onClick={() => setSelectedFinding(null)}
-              className="absolute top-6 right-6 p-2 rounded-lg bg-[#0B1220] border border-[#1F2937] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
+              className="absolute top-6 right-6 p-2 rounded-lg bg-[#090D16] border border-[#1E293B] text-[#64748B] hover:text-[#F8FAFC] transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="space-y-6">
-              {/* Drawer Title */}
+              {/* Finding Title & Severity */}
               <div>
-                <span className={`px-2.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide border ${getSeverityStyle(selectedFinding.severity)}`}>
-                  {selectedFinding.severity}
-                </span>
-                <h2 className="text-lg font-bold text-[#F8FAFC] mt-3">{selectedFinding.title}</h2>
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-[#94A3B8]">
-                  <span className="font-mono text-[#3B82F6] font-bold">{selectedFinding.finding_id}</span>
-                  <span>•</span>
-                  <span>Mission:</span>
-                  <Link to={`/mission/${selectedFinding.mission}`} className="font-mono text-[#3B82F6] hover:underline inline-flex items-center gap-0.5">
-                    {selectedFinding.mission} <ExternalLink className="w-2.5 h-2.5" />
-                  </Link>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-mono text-xs text-[#38BDF8]">{selectedFinding.finding_id}</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide border ${getSeverityStyle(selectedFinding.severity)}`}>
+                    {selectedFinding.severity}
+                  </span>
+                  <span className="text-xs text-[#64748B] font-mono">
+                    {Math.round((selectedFinding.confidence > 1 ? selectedFinding.confidence : selectedFinding.confidence * 100))}% Confidence
+                  </span>
                 </div>
-              </div>
-
-              {/* Categorization & Status */}
-              <div className="grid grid-cols-2 gap-4 border-t border-b border-[#1F2937] py-4">
-                <div>
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Category</span>
-                  <p className="text-xs font-mono font-bold text-[#F8FAFC] mt-1">{selectedFinding.category}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Classification</span>
-                  <p className="text-xs font-bold text-[#3B82F6] mt-1">Verified Finding</p>
-                </div>
+                <h2 className="text-lg font-bold text-[#F8FAFC]">{selectedFinding.title}</h2>
               </div>
 
               {/* Description */}
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Description</span>
-                <p className="text-xs text-[#94A3B8] leading-relaxed">{selectedFinding.description}</p>
+                <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Detailed Observation</span>
+                <p className="text-xs text-[#94A3B8] leading-relaxed bg-[#090D16] border border-[#1E293B] p-4 rounded-xl">
+                  {selectedFinding.description}
+                </p>
               </div>
 
-              {/* Explainable AI Reasoning */}
+              {/* Explainable Security Reasoning */}
               {selectedFinding.reasoning && (
                 <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#A855F7]" /> Explainable Security Reasoning (AI Narrative & Evidence Analysis)
+                  <span className="text-[10px] font-bold text-[#8B5CF6] uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Explainable Security Reasoning
                   </span>
-                  <div className="p-4 rounded-lg bg-[#A855F7]/5 border border-[#A855F7]/20 text-[#E9D5FF] space-y-2">
+                  <div className="p-4 rounded-xl bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 text-[#DDD6FE]">
                     <p className="text-xs leading-relaxed italic">{selectedFinding.reasoning}</p>
-                    <div className="text-[10px] text-[#A855F7]/80 font-medium">
-                      ✓ Evidence-backed deductive reasoning • Calibrated risk calculation • False-positive pruned
-                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Recommendations */}
+              {/* Remediation Guidance */}
               {selectedFinding.recommendation && (
                 <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Remediation Guidance</span>
-                  <div className="p-4 rounded-lg bg-[#22C55E]/5 border border-[#22C55E]/20 text-[#22C55E] flex items-start gap-2.5">
-                    <ClipboardCheck className="w-5 h-5 shrink-0 mt-0.5" />
-                    <p className="text-xs font-medium leading-relaxed">{selectedFinding.recommendation}</p>
+                  <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-wider flex items-center gap-1.5">
+                    <ClipboardCheck className="w-3.5 h-3.5" /> Recommended Remediation
+                  </span>
+                  <div className="p-4 rounded-xl bg-[#10B981]/5 border border-[#10B981]/20 text-[#A7F3D0]">
+                    <p className="text-xs leading-relaxed">{selectedFinding.recommendation}</p>
                   </div>
                 </div>
               )}
 
-              {/* Evidence */}
+              {/* Evidence Log */}
               {selectedFinding.evidence && selectedFinding.evidence.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase">Evidence Log</span>
-                  <div className="bg-[#0B1220] border border-[#1F2937] p-4 rounded-lg space-y-2 max-h-[200px] overflow-y-auto">
-                    {selectedFinding.evidence.map((log, idx) => (
-                      <pre key={idx} className="text-[10px] text-[#94A3B8] whitespace-pre-wrap font-mono">{log}</pre>
+                  <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Concrete Evidence Log</span>
+                  <div className="bg-[#090D16] border border-[#1E293B] p-4 rounded-xl space-y-1.5 max-h-48 overflow-y-auto font-mono text-[11px] text-[#38BDF8]">
+                    {selectedFinding.evidence.map((ev, i) => (
+                      <div key={i} className="flex gap-2">
+                        <span className="text-[#64748B] select-none">{i + 1}.</span>
+                        <span className="break-all">{ev}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Close action */}
-            <div className="pt-6 border-t border-[#1F2937] flex justify-end">
-              <button
-                onClick={() => setSelectedFinding(null)}
-                className="px-4 py-2 bg-[#1F2937] hover:bg-[#111827] text-[#F8FAFC] text-xs font-bold rounded-lg border border-[#1F2937] transition-all"
+            {/* Bottom Actions */}
+            <div className="pt-6 border-t border-[#1E293B] flex items-center justify-between">
+              <span className="text-xs text-[#64748B]">Originating Mission: <span className="text-[#38BDF8] font-mono">{selectedFinding.mission}</span></span>
+              <Link
+                to={`/mission/${selectedFinding.mission}`}
+                className="px-4 py-2 bg-[#0284C7] hover:bg-[#0369A1] text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                Close Details
-              </button>
+                <span>Inspect Mission</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </div>

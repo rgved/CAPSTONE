@@ -34,41 +34,46 @@ const createTestQueryClient = () =>
   });
 
 describe("Frontend Dashboard Pages", () => {
+  const defaultDashboard = {
+    stats: {
+      total_missions: 3,
+      assets_scanned: 1,
+      total_findings: 15,
+      critical_findings: 2,
+      high_findings: 3,
+      security_score: 82,
+      features_identified: 5
+    },
+    recent_missions: [
+      {
+        mission_id: "MISSION-001",
+        target: "http://localhost:8080",
+        status: "completed",
+        date: "2026-06-17T12:00:00Z",
+        findings: 5
+      }
+    ],
+    findings_severity: [
+      { severity: "High", count: 2 },
+      { severity: "Medium", count: 5 },
+      { severity: "Low", count: 8 },
+      { severity: "Informational", count: 0 }
+    ],
+    feature_distribution: [{ name: "Authentication", value: 1 }]
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetch.mockImplementation(async (url: any) => {
+      const u = String(url);
+      if (u.includes("/api/dashboard")) {
+        return { ok: true, json: async () => defaultDashboard };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
   });
 
   it("Dashboard renders statistics and tables after API success", async () => {
-    const mockDashboardData = {
-      stats: {
-        total_missions: 3,
-        total_findings: 15,
-        avg_token_reduction: 60.5,
-        features_identified: 5
-      },
-      recent_missions: [
-        {
-          mission_id: "MISSION-001",
-          target: "http://localhost:8080",
-          status: "completed",
-          date: "2026-06-17T12:00:00Z",
-          findings: 5
-        }
-      ],
-      findings_severity: [
-        { severity: "High", count: 2 },
-        { severity: "Medium", count: 5 },
-        { severity: "Low", count: 8 },
-        { severity: "Informational", count: 0 }
-      ],
-      feature_distribution: [{ name: "Authentication", value: 1 }]
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockDashboardData
-    });
-
     const queryClient = createTestQueryClient();
 
     render(
@@ -79,11 +84,10 @@ describe("Frontend Dashboard Pages", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText("Loading platform metrics...")).toBeInTheDocument();
+    expect(screen.getByText("Loading Security Telemetry...")).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText("Security Dashboard")).toBeInTheDocument();
-      expect(screen.getByText("60.5%")).toBeInTheDocument();
+      expect(screen.getByText("Security Reconnaissance Center")).toBeInTheDocument();
       expect(screen.getByText("http://localhost:8080")).toBeInTheDocument();
       expect(screen.getByText("MISSION-001")).toBeInTheDocument();
     });
@@ -145,14 +149,18 @@ describe("Frontend Dashboard Pages", () => {
       { task: "RUN_RECON", status: "completed", timestamp: "2026-06-17T12:00:00Z" }
     ];
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockMissionDetail
-    });
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockTimeline
+    mockFetch.mockImplementation(async (url: any) => {
+      const u = String(url);
+      if (u.includes("/api/missions/MISSION-001/timeline")) {
+        return { ok: true, json: async () => mockTimeline };
+      }
+      if (u.includes("/api/missions/MISSION-001")) {
+        return { ok: true, json: async () => mockMissionDetail };
+      }
+      if (u.includes("/api/dashboard")) {
+        return { ok: true, json: async () => defaultDashboard };
+      }
+      return { ok: true, json: async () => ({}) };
     });
 
     const queryClient = createTestQueryClient();
@@ -192,9 +200,15 @@ describe("Frontend Dashboard Pages", () => {
       }
     ];
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockFindings
+    mockFetch.mockImplementation(async (url: any) => {
+      const u = String(url);
+      if (u.includes("/api/findings")) {
+        return { ok: true, json: async () => mockFindings };
+      }
+      if (u.includes("/api/dashboard")) {
+        return { ok: true, json: async () => defaultDashboard };
+      }
+      return { ok: true, json: async () => ({}) };
     });
 
     const queryClient = createTestQueryClient();
@@ -208,7 +222,7 @@ describe("Frontend Dashboard Pages", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Findings Explorer")).toBeInTheDocument();
+      expect(screen.getByText("Security Findings Explorer")).toBeInTheDocument();
       expect(screen.getByText("Weak auth form")).toBeInTheDocument();
       expect(screen.getByText("MISSION-001")).toBeInTheDocument();
     });
@@ -224,9 +238,15 @@ describe("Frontend Dashboard Pages", () => {
       }
     ];
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockReports
+    mockFetch.mockImplementation(async (url: any) => {
+      const u = String(url);
+      if (u.includes("/api/reports")) {
+        return { ok: true, json: async () => mockReports };
+      }
+      if (u.includes("/api/dashboard")) {
+        return { ok: true, json: async () => defaultDashboard };
+      }
+      return { ok: true, json: async () => ({}) };
     });
 
     const queryClient = createTestQueryClient();
@@ -257,9 +277,15 @@ describe("Frontend Dashboard Pages", () => {
       mission_runtime_trend: [{ mission_id: "MISSION-001", runtime: 45.2 }]
     };
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockMetrics
+    mockFetch.mockImplementation(async (url: any) => {
+      const u = String(url);
+      if (u.includes("/api/metrics")) {
+        return { ok: true, json: async () => mockMetrics };
+      }
+      if (u.includes("/api/dashboard")) {
+        return { ok: true, json: async () => defaultDashboard };
+      }
+      return { ok: true, json: async () => ({}) };
     });
 
     const queryClient = createTestQueryClient();
@@ -273,9 +299,8 @@ describe("Frontend Dashboard Pages", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Research Analytics & Evaluation")).toBeInTheDocument();
-      expect(screen.getByText("45.2s")).toBeInTheDocument();
-      expect(screen.getByText("60%")).toBeInTheDocument();
+      expect(screen.getByText("Security Telemetry & Surface Intelligence")).toBeInTheDocument();
+      expect(screen.getByText(/45\.2s/)).toBeInTheDocument();
     });
   });
 });

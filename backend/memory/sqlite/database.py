@@ -4,6 +4,7 @@ backend/memory/sqlite/database.py
 SQLite initialisation and connection management.
 
 Creates the tables used by the current MVP phases:
+  - missions  (I1: new — source of truth for mission status)
   - routes
   - features
   - findings
@@ -24,6 +25,30 @@ from backend.services.logger import get_logger
 logger = get_logger(__name__)
 
 # ── SQL ───────────────────────────────────────────────────────────────────────
+
+_CREATE_USERS = """
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT    NOT NULL UNIQUE,
+    email         TEXT    NOT NULL UNIQUE,
+    password_hash TEXT    NOT NULL,
+    salt          TEXT    NOT NULL,
+    created_at    TEXT    NOT NULL
+);
+"""
+
+# I1: Proper missions table — replaces inferred mission IDs from tasks/reports.
+_CREATE_MISSIONS = """
+CREATE TABLE IF NOT EXISTS missions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    mission_id  TEXT    NOT NULL UNIQUE,
+    target_url  TEXT    NOT NULL,
+    status      TEXT    NOT NULL DEFAULT 'running',
+    started_at  TEXT    NOT NULL,
+    finished_at TEXT,
+    username    TEXT
+);
+"""
 
 _CREATE_ROUTES = """
 CREATE TABLE IF NOT EXISTS routes (
@@ -109,6 +134,15 @@ def init_db(db_path: Optional[str] = None) -> None:
     conn = get_connection(db_path)
     try:
         cursor = conn.cursor()
+        # I1: missions table first — other tables reference mission_id
+        cursor.execute(_CREATE_USERS)
+        cursor.execute(_CREATE_MISSIONS)
+        _ensure_column(cursor, "missions", "mission_id", "TEXT NOT NULL DEFAULT ''")
+        _ensure_column(cursor, "missions", "target_url", "TEXT NOT NULL DEFAULT ''")
+        _ensure_column(cursor, "missions", "status", "TEXT NOT NULL DEFAULT 'running'")
+        _ensure_column(cursor, "missions", "started_at", "TEXT NOT NULL DEFAULT ''")
+        _ensure_column(cursor, "missions", "finished_at", "TEXT")
+        _ensure_column(cursor, "missions", "username", "TEXT")
         cursor.execute(_CREATE_ROUTES)
         _ensure_column(cursor, "routes", "mission_id", "TEXT")
         cursor.execute(_CREATE_FEATURES)
