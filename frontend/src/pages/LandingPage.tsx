@@ -272,21 +272,20 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] selection:bg-[#0284C7] selection:text-white font-sans">
+    <div className="min-h-screen bg-[#0E1217] text-[#F8FAFC] selection:bg-[#E2F952] selection:text-black font-sans">
       {/* ────────────────── TOP NAVBAR ────────────────── */}
-      <nav className="sticky top-0 z-40 bg-[#090D16]/90 backdrop-blur-md border-b border-[#1E293B] px-6 lg:px-12 py-3.5 flex items-center justify-between">
+      <nav className="sticky top-0 z-40 bg-[#0E1217] border-b-2 border-black px-6 lg:px-12 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-3 group">
             <span className="font-brand text-2xl text-[#F8FAFC] italic tracking-tight group-hover:text-white transition">
-              Sniff<span className="text-[#38BDF8]">.</span>
+              Sniff<span className="text-[#E2F952]">.</span>
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#0284C7]/10 text-[#38BDF8] border border-[#0284C7]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8] animate-pulse" />
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#141A23] text-[#E2F952] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
               Agentic Recon
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-6 text-xs font-medium text-[#94A3B8]">
+          <div className="hidden md:flex items-center gap-6 text-xs font-bold text-[#94A3B8]">
             <button
               onClick={() => scrollToSection("process")}
               className="hover:text-[#F8FAFC] transition cursor-pointer"
@@ -308,7 +307,7 @@ export default function LandingPage() {
             {isAuthenticated && (
               <Link
                 to="/dashboard"
-                className="text-[#38BDF8] hover:text-[#7DD3FC] transition flex items-center gap-1"
+                className="text-[#E2F952] hover:underline transition flex items-center gap-1 font-mono"
               >
                 Dashboard
                 <ArrowRight className="w-3 h-3" />
@@ -321,18 +320,18 @@ export default function LandingPage() {
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0F172A] border border-[#1E293B]">
-                <div className="w-6 h-6 rounded-full bg-[#0284C7] text-white flex items-center justify-center text-xs font-bold font-mono">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#141A23] border-2 border-black shadow-[2px_2px_0px_#000]">
+                <div className="w-6 h-6 rounded-md bg-[#E2F952] text-black border border-black flex items-center justify-center text-xs font-black font-mono">
                   {user.username.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-xs font-mono text-[#E2E8F0] font-medium hidden sm:inline">
+                <span className="text-xs font-mono text-[#E2E8F0] font-bold hidden sm:inline">
                   @{user.username}
                 </span>
               </div>
 
               <Link
                 to="/dashboard"
-                className="px-3.5 py-1.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-semibold shadow-md shadow-sky-500/20 transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-lg bg-[#E2F952] text-black text-xs font-black border-2 border-black shadow-[2.5px_2.5px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5"
               >
                 <span>Console</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -344,7 +343,7 @@ export default function LandingPage() {
                   navigate("/");
                 }}
                 title="Sign Out"
-                className="p-2 rounded-xl text-[#64748B] hover:text-[#EF4444] hover:bg-[#1E293B] transition cursor-pointer"
+                className="p-2 rounded-lg bg-[#141A23] border-2 border-black shadow-[2px_2px_0px_#000] text-[#94A3B8] hover:text-black hover:bg-[#EF4444] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -353,13 +352,13 @@ export default function LandingPage() {
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => openAuthModal("login")}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#1E293B]/60 transition"
+                className="px-4 py-2 rounded-lg text-xs font-bold text-[#CBD5E1] hover:text-white border-2 border-black bg-[#141A23] shadow-[2px_2px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3.5px_3.5px_0px_#000] transition-all cursor-pointer"
               >
                 Sign In
               </button>
               <button
                 onClick={() => openAuthModal("signup")}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#0284C7] hover:bg-[#0369A1] text-white shadow-lg shadow-sky-500/20 transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg text-xs font-black bg-[#E2F952] text-black border-2 border-black shadow-[2.5px_2.5px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Lock className="w-3.5 h-3.5" />
                 <span>Create Account</span>
@@ -370,135 +369,130 @@ export default function LandingPage() {
       </nav>
 
       {/* ────────────────── HERO SECTION ────────────────── */}
-      <section className="relative pt-20 pb-28 px-6 lg:px-12 overflow-hidden border-b border-[#1E293B]">
-        {/* Glow ambient background effects */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-[#0284C7]/20 to-[#38BDF8]/10 blur-[130px] rounded-full pointer-events-none" />
-        <div className="absolute top-10 left-10 w-72 h-72 bg-[#6366F1]/10 blur-[100px] rounded-full pointer-events-none" />
-
+      <section className="relative pt-20 pb-28 px-6 lg:px-12 border-b-2 border-black bg-[#0E1217]">
         <div className="relative max-w-5xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0F172A] border border-[#1E293B] text-xs font-mono text-[#94A3B8] mb-8 shadow-sm">
-            <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-ping" />
-            <span className="text-[#38BDF8] font-bold">Phase 8 Ready</span>
-            <span className="text-[#475569]">•</span>
-            <span>Deterministic Multi-Agent Recon Platform</span>
+          {/* Subtle brutalist badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#141A23] border-2 border-black shadow-[2.5px_2.5px_0px_#000] text-xs font-mono font-bold mb-8">
+            <span className="text-[#E2F952]">Phase 8 Ready</span>
+            <span className="text-[#475569]">/</span>
+            <span className="text-[#CBD5E1]">Autonomous Security Reconnaissance</span>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-[#F8FAFC] leading-[1.1] mb-6">
+          {/* Headline with editorial italic keyword */}
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-[#F8FAFC] leading-[1.12] mb-6">
             Autonomous Web Recon &{" "}
-            <span className="bg-gradient-to-r from-[#38BDF8] via-[#60A5FA] to-[#818CF8] bg-clip-text text-transparent">
+            <span className="font-editorial italic font-normal text-[#E2F952] block sm:inline">
               Vulnerability Discovery
             </span>
           </h1>
 
-          {/* Subtitle */}
+          {/* Subtitle with mixed italics */}
           <p className="max-w-3xl mx-auto text-base sm:text-lg text-[#94A3B8] leading-relaxed mb-10">
-            Powered by a Smart Orchestrator and focused AI worker agents. Crawl Single-Page Apps, classify functional surfaces, embed attack topologies with ChromaDB RAG, and verify OWASP Top 10 vulnerabilities with Groq LLM reasoning.
+            Powered by a Smart Orchestrator and focused AI worker agents. Crawl <span className="font-editorial italic text-white font-medium">Single-Page Applications</span>, classify functional surfaces, embed topologies with <span className="font-editorial italic text-white font-medium">ChromaDB RAG</span>, and verify <span className="font-editorial italic text-[#E2F952] font-semibold">OWASP Top 10</span> vulnerabilities with Groq LLM reasoning.
           </p>
 
           {/* Hero CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
             <button
               onClick={handleStartScanning}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-base font-bold shadow-xl shadow-sky-500/25 hover:shadow-sky-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer group"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#E2F952] text-black text-base font-black border-2 border-black shadow-[3.5px_3.5px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5.5px_5.5px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000] transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer group"
             >
-              <Terminal className="w-5 h-5 text-[#7DD3FC]" />
+              <Terminal className="w-5 h-5 text-black" />
               <span>Start Scanning</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
               onClick={() => scrollToSection("process")}
-              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] border border-[#1E293B] text-sm font-semibold text-[#CBD5E1] hover:text-white transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-[#141A23] text-[#F8FAFC] text-sm font-bold border-2 border-black shadow-[3.5px_3.5px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5.5px_5.5px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000] transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Activity className="w-4 h-4 text-[#38BDF8]" />
+              <Activity className="w-4 h-4 text-[#E2F952]" />
               <span>Explore Agent Pipeline</span>
             </button>
           </div>
 
           {/* Live Telemetry Bar */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <div className="p-4 rounded-xl bg-[#0F172A]/70 border border-[#1E293B] backdrop-blur-xs text-left">
-              <div className="text-2xl font-bold font-mono text-[#F8FAFC]">6 Agents</div>
-              <div className="text-xs text-[#64748B] mt-0.5">Specialized Pipeline Stages</div>
+            <div className="p-4 rounded-xl bg-[#141A23] border-2 border-black shadow-[3px_3px_0px_#000] text-left hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_#000] transition-all">
+              <div className="text-2xl font-black font-mono text-[#F8FAFC]">6 Agents</div>
+              <div className="text-xs text-[#94A3B8] font-editorial italic mt-0.5">Specialized Pipeline Stages</div>
             </div>
-            <div className="p-4 rounded-xl bg-[#0F172A]/70 border border-[#1E293B] backdrop-blur-xs text-left">
-              <div className="text-2xl font-bold font-mono text-[#38BDF8]">OWASP 2021</div>
-              <div className="text-xs text-[#64748B] mt-0.5">Automated Risk Mapping</div>
+            <div className="p-4 rounded-xl bg-[#141A23] border-2 border-black shadow-[3px_3px_0px_#000] text-left hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_#000] transition-all">
+              <div className="text-2xl font-black font-mono text-[#E2F952]">OWASP 2021</div>
+              <div className="text-xs text-[#94A3B8] font-editorial italic mt-0.5">Automated Risk Mapping</div>
             </div>
-            <div className="p-4 rounded-xl bg-[#0F172A]/70 border border-[#1E293B] backdrop-blur-xs text-left">
-              <div className="text-2xl font-bold font-mono text-[#10B981]">ChromaDB</div>
-              <div className="text-xs text-[#64748B] mt-0.5">Vector Memory & RAG</div>
+            <div className="p-4 rounded-xl bg-[#141A23] border-2 border-black shadow-[3px_3px_0px_#000] text-left hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_#000] transition-all">
+              <div className="text-2xl font-black font-mono text-[#38BDF8]">ChromaDB</div>
+              <div className="text-xs text-[#94A3B8] font-editorial italic mt-0.5">Vector Memory & RAG</div>
             </div>
-            <div className="p-4 rounded-xl bg-[#0F172A]/70 border border-[#1E293B] backdrop-blur-xs text-left">
-              <div className="text-2xl font-bold font-mono text-[#A78BFA]">Per-User</div>
-              <div className="text-xs text-[#64748B] mt-0.5">Isolated Scan History</div>
+            <div className="p-4 rounded-xl bg-[#141A23] border-2 border-black shadow-[3px_3px_0px_#000] text-left hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_#000] transition-all">
+              <div className="text-2xl font-black font-mono text-[#10B981]">Per-User</div>
+              <div className="text-xs text-[#94A3B8] font-editorial italic mt-0.5">Isolated Scan History</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ────────────────── ARCHITECTURE FLOW OVERVIEW ────────────────── */}
-      <section id="process" className="py-24 px-6 lg:px-12 border-b border-[#1E293B] bg-[#090D16]">
+      <section id="process" className="py-24 px-6 lg:px-12 border-b-2 border-black bg-[#0E1217]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0284C7]/10 border border-[#0284C7]/20 text-xs font-mono text-[#38BDF8] mb-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#141A23] border-2 border-black shadow-[2px_2px_0px_#000] text-xs font-mono text-[#E2F952] mb-4">
               <Cpu className="w-3.5 h-3.5" />
               SYSTEM ARCHITECTURE
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#F8FAFC]">
-              How Sniff Finds Web Vulnerabilities
+              How Sniff Finds <span className="font-editorial italic font-normal text-[#E2F952]">Web Vulnerabilities</span>
             </h2>
             <p className="text-sm sm:text-base text-[#94A3B8] mt-3">
-              Unlike brute-force scanners, Sniff utilizes an autonomous multi-agent pipeline adhering to the "Smart Orchestrator + Focused Workers" paradigm.
+              Unlike noisy brute-force scanners, Sniff utilizes an autonomous multi-agent pipeline adhering to the <em className="font-editorial text-[#F8FAFC]">"Smart Orchestrator + Focused Workers"</em> paradigm.
             </p>
           </div>
 
-          {/* Interactive Flow Diagram */}
+          {/* Flow Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-[#0F172A] border border-[#1E293B] hover:border-[#38BDF8]/40 transition group">
-              <div className="w-12 h-12 rounded-xl bg-[#38BDF8]/10 border border-[#38BDF8]/20 flex items-center justify-center text-[#38BDF8] mb-5 group-hover:scale-105 transition-transform">
-                <Radar className="w-6 h-6" />
+            <div className="p-6 bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#000] transition-all duration-200 group">
+              <div className="w-12 h-12 bg-[#38BDF8] text-black border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center mb-5 font-bold">
+                <Radar className="w-6 h-6 text-black" />
               </div>
               <div className="text-xs font-mono text-[#38BDF8] font-bold mb-1">STAGE 1: DISCOVERY</div>
               <h3 className="text-lg font-bold text-[#F8FAFC] mb-2">Deep SPA Reconnaissance</h3>
               <p className="text-xs text-[#94A3B8] leading-relaxed mb-4">
-                Headless extraction crawls targets, unmasks client-side SPA routing (React, Angular, Vue), categorizes all forms, buttons, inputs, scripts, and endpoints without tripping rate limiters.
+                Headless extraction crawls targets, unmasks client-side SPA routing (<em className="font-editorial text-[#CBD5E1]">React, Angular, Vue</em>), categorizes all forms, buttons, inputs, scripts, and endpoints without tripping rate limiters.
               </p>
-              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between text-[11px] font-mono text-[#64748B]">
-                <span>Worker: Recon Agent</span>
-                <span className="text-emerald-400">Strict HTML Only</span>
+              <div className="pt-3 border-t-2 border-black flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+                <span>Worker: <strong className="text-[#F8FAFC]">Recon Agent</strong></span>
+                <span className="px-2 py-0.5 bg-[#10B981]/15 text-[#10B981] border border-black text-[10px] font-bold">Strict HTML Only</span>
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#0F172A] border border-[#1E293B] hover:border-[#818CF8]/40 transition group">
-              <div className="w-12 h-12 rounded-xl bg-[#818CF8]/10 border border-[#818CF8]/20 flex items-center justify-center text-[#818CF8] mb-5 group-hover:scale-105 transition-transform">
-                <Database className="w-6 h-6" />
+            <div className="p-6 bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#000] transition-all duration-200 group">
+              <div className="w-12 h-12 bg-[#818CF8] text-black border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center mb-5 font-bold">
+                <Database className="w-6 h-6 text-black" />
               </div>
               <div className="text-xs font-mono text-[#818CF8] font-bold mb-1">STAGE 2: VECTOR RAG</div>
               <h3 className="text-lg font-bold text-[#F8FAFC] mb-2">Semantic Feature Memory</h3>
               <p className="text-xs text-[#94A3B8] leading-relaxed mb-4">
-                Discovered routes and structures are embedded into ChromaDB with domain-isolated vector spaces. Past vulnerability patterns and attack paths are queried via cosine similarity.
+                Discovered routes and structures are embedded into <em className="font-editorial text-[#CBD5E1]">ChromaDB</em> with domain-isolated vector spaces. Past vulnerability patterns and attack paths are queried via cosine similarity.
               </p>
-              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between text-[11px] font-mono text-[#64748B]">
-                <span>Service: ChromaDB + SQLite</span>
-                <span className="text-sky-400">Cosine RAG</span>
+              <div className="pt-3 border-t-2 border-black flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+                <span>Service: <strong className="text-[#F8FAFC]">ChromaDB + SQLite</strong></span>
+                <span className="px-2 py-0.5 bg-[#38BDF8]/15 text-[#38BDF8] border border-black text-[10px] font-bold">Cosine RAG</span>
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#0F172A] border border-[#1E293B] hover:border-[#FB7185]/40 transition group">
-              <div className="w-12 h-12 rounded-xl bg-[#FB7185]/10 border border-[#FB7185]/20 flex items-center justify-center text-[#FB7185] mb-5 group-hover:scale-105 transition-transform">
-                <Search className="w-6 h-6" />
+            <div className="p-6 bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#000] transition-all duration-200 group">
+              <div className="w-12 h-12 bg-[#FB7185] text-black border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center mb-5 font-bold">
+                <Search className="w-6 h-6 text-black" />
               </div>
               <div className="text-xs font-mono text-[#FB7185] font-bold mb-1">STAGE 3: REASONING</div>
               <h3 className="text-lg font-bold text-[#F8FAFC] mb-2">Ground-Truth LLM Triage</h3>
               <p className="text-xs text-[#94A3B8] leading-relaxed mb-4">
-                Groq Llama 3 evaluates strictly verified DOM evidence. Missing CSRF protections, sensitive input leaks, and risky configurations are triangulated into verified, hallucination-free findings.
+                <em className="font-editorial text-[#CBD5E1]">Groq Llama 3</em> evaluates strictly verified DOM evidence. Missing CSRF protections, sensitive input leaks, and risky configurations are triangulated into verified, hallucination-free findings.
               </p>
-              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between text-[11px] font-mono text-[#64748B]">
-                <span>Engine: Groq Llama 3</span>
-                <span className="text-purple-400">CVSS Audited</span>
+              <div className="pt-3 border-t-2 border-black flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+                <span>Engine: <strong className="text-[#F8FAFC]">Groq Llama 3</strong></span>
+                <span className="px-2 py-0.5 bg-[#C084FC]/15 text-[#C084FC] border border-black text-[10px] font-bold">CVSS Audited</span>
               </div>
             </div>
           </div>
@@ -506,16 +500,16 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────────── VERTICAL TIMELINE / DISCOVERY PROCESS ────────────────── */}
-      <section id="phases" className="py-24 px-6 lg:px-12 border-b border-[#1E293B] bg-[#0B101D] relative">
+      <section id="phases" className="py-24 px-6 lg:px-12 border-b-2 border-black bg-[#0B0E14] relative">
         <div className="max-w-5xl mx-auto">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/20 text-xs font-mono text-[#10B981] mb-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#141A23] border-2 border-black shadow-[2px_2px_0px_#000] text-xs font-mono text-[#E2F952] mb-4">
               <Sliders className="w-3.5 h-3.5" />
               DISCOVERY PIPELINE
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-[#F8FAFC]">
-              Agent Pipeline in Real-Time
+              Agent Pipeline in <span className="font-editorial italic font-normal text-[#E2F952]">Real-Time</span>
             </h2>
             <p className="text-sm sm:text-base text-[#94A3B8] mt-3">
               Scroll down to follow the lifecycle of an autonomous scan as each specialized agent is dispatched along the vertical execution timeline.
@@ -524,8 +518,8 @@ export default function LandingPage() {
 
           {/* Vertical Timeline Container */}
           <div className="relative">
-            {/* The Vertical Line */}
-            <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#38BDF8] via-[#818CF8] to-[#A78BFA] -translate-x-1/2 opacity-30 pointer-events-none" />
+            {/* The Solid Vertical Line */}
+            <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-1 bg-black -translate-x-1/2 pointer-events-none" />
 
             {/* Timeline Phases */}
             <div className="space-y-16">
@@ -545,10 +539,10 @@ export default function LandingPage() {
                     {/* Center Node on the line */}
                     <div
                       onClick={() => setActivePhase(phase.id)}
-                      className={`absolute left-6 md:left-1/2 -translate-x-1/2 top-4 w-12 h-12 rounded-2xl flex items-center justify-center z-10 cursor-pointer transition-all duration-300 ${
+                      className={`absolute left-6 md:left-1/2 -translate-x-1/2 top-4 w-12 h-12 border-2 border-black flex items-center justify-center z-10 cursor-pointer transition-all duration-200 ${
                         isActive
-                          ? "bg-[#0284C7] text-white shadow-lg shadow-sky-500/40 ring-4 ring-[#0284C7]/20 scale-110"
-                          : "bg-[#0F172A] text-[#94A3B8] border border-[#1E293B] hover:text-[#F8FAFC]"
+                          ? "bg-[#E2F952] text-black shadow-[3px_3px_0px_#000] scale-110 font-bold"
+                          : "bg-[#141A23] text-[#94A3B8] shadow-[2px_2px_0px_#000] hover:text-[#F8FAFC] hover:bg-[#1C2533]"
                       }`}
                     >
                       <IconComponent className="w-5 h-5" />
@@ -557,20 +551,20 @@ export default function LandingPage() {
                     {/* Content Card (Left or Right depending on isEven) */}
                     <div className="ml-16 md:ml-0 md:w-1/2 pl-0 md:px-8 w-full">
                       <div
-                        className={`p-6 rounded-2xl bg-[#0F172A] border transition-all duration-300 ${
+                        className={`p-6 bg-[#141A23] border-2 border-black transition-all duration-200 ${
                           isActive
-                            ? "border-[#38BDF8]/60 shadow-xl shadow-sky-500/10 -translate-y-1"
-                            : "border-[#1E293B] hover:border-[#38BDF8]/30"
+                            ? "shadow-[5px_5px_0px_#000] -translate-y-1 bg-[#171E29]"
+                            : "shadow-[3px_3px_0px_#000] hover:shadow-[5px_5px_0px_#000]"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <span
-                            className="text-xs font-mono font-bold px-2.5 py-1 rounded-md"
-                            style={{ backgroundColor: `${phase.color}15`, color: phase.color }}
+                            className="text-xs font-mono font-bold px-2.5 py-1 border border-black shadow-[1.5px_1.5px_0px_#000]"
+                            style={{ backgroundColor: `${phase.color}25`, color: phase.color }}
                           >
                             {phase.phase} • {phase.badge}
                           </span>
-                          <span className="text-[11px] font-mono text-[#64748B]">
+                          <span className="text-[11px] font-mono text-[#94A3B8]">
                             {phase.agent}
                           </span>
                         </div>
@@ -588,7 +582,7 @@ export default function LandingPage() {
                           {phase.techniques.map((t, i) => (
                             <span
                               key={i}
-                              className="px-2 py-0.5 rounded-md bg-[#090D16] border border-[#1E293B] text-[10px] font-mono text-[#CBD5E1]"
+                              className="px-2 py-0.5 bg-[#0A0D12] border border-black shadow-[1px_1px_0px_#000] text-[10px] font-mono text-[#CBD5E1]"
                             >
                               ✓ {t}
                             </span>
@@ -596,7 +590,7 @@ export default function LandingPage() {
                         </div>
 
                         {/* Inputs / Outputs Box */}
-                        <div className="p-3 rounded-xl bg-[#090D16] border border-[#1E293B] text-[11px] font-mono space-y-1">
+                        <div className="p-3 bg-[#0A0D12] border-2 border-black shadow-[2px_2px_0px_#000] text-[11px] font-mono space-y-1.5">
                           <div className="flex items-start gap-2">
                             <span className="text-[#38BDF8] shrink-0 font-bold">IN:</span>
                             <span className="text-[#94A3B8]">{phase.inputs}</span>
@@ -620,11 +614,11 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────────── OWASP TOP 10 MATRIX ────────────────── */}
-      <section id="owasp" className="py-24 px-6 lg:px-12 border-b border-[#1E293B] bg-[#090D16]">
+      <section id="owasp" className="py-24 px-6 lg:px-12 border-b-2 border-black bg-[#0E1217]">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/20 text-xs font-mono text-[#EF4444] mb-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-[#141A23] border-2 border-black shadow-[2px_2px_0px_#000] text-xs font-mono text-[#EF4444] mb-4">
               <Shield className="w-3.5 h-3.5" />
               INDUSTRY STANDARD BENCHMARK
             </div>
@@ -632,28 +626,28 @@ export default function LandingPage() {
               OWASP Top 10 Security Matrix
             </h2>
             <p className="text-sm sm:text-base text-[#94A3B8] mt-3">
-              Sniff classifies and correlates reconnaissance findings against the latest OWASP Top 10 Web Application Security Risks. Click any category below to inspect our automated detection criteria.
+              Sniff classifies and correlates reconnaissance findings against the latest <span className="font-editorial italic text-[#E2F952]">OWASP Top 10</span> Web Application Security Risks. Click any category below to inspect our automated detection criteria.
             </p>
           </div>
 
           {/* Interactive OWASP Grid & Detail Panel */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* List of 10 categories (Left Column) */}
-            <div className="lg:col-span-5 space-y-2">
+            <div className="lg:col-span-5 space-y-2.5">
               {OWASP_TOP_10.map((item) => {
                 const isSelected = selectedOwasp.id === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => setSelectedOwasp(item)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex items-center justify-between cursor-pointer ${
+                    className={`w-full text-left p-3.5 border-2 border-black transition-all duration-150 flex items-center justify-between cursor-pointer ${
                       isSelected
-                        ? "bg-[#0F172A] border-[#38BDF8] shadow-md shadow-sky-500/10"
-                        : "bg-[#0F172A]/40 border-[#1E293B] hover:border-[#38BDF8]/40 hover:bg-[#0F172A]"
+                        ? "bg-[#1C2533] shadow-[3.5px_3.5px_0px_#000] -translate-y-0.5"
+                        : "bg-[#141A23] shadow-[2px_2px_0px_#000] hover:shadow-[3px_3px_0px_#000] hover:bg-[#18202C]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono font-bold text-[#38BDF8]">
+                      <span className="text-xs font-mono font-bold text-[#E2F952]">
                         {item.code.split(":")[0]}
                       </span>
                       <span className="text-xs font-semibold text-[#F8FAFC]">
@@ -663,17 +657,17 @@ export default function LandingPage() {
 
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 border border-black shadow-[1px_1px_0px_#000] ${
                           item.severity === "Critical"
-                            ? "bg-red-950/60 text-red-400 border border-red-500/30"
+                            ? "bg-red-500/20 text-red-400"
                             : item.severity === "High"
-                            ? "bg-amber-950/60 text-amber-400 border border-amber-500/30"
-                            : "bg-blue-950/60 text-blue-400 border border-blue-500/30"
+                            ? "bg-amber-500/20 text-amber-400"
+                            : "bg-blue-500/20 text-blue-400"
                         }`}
                       >
                         {item.severity}
                       </span>
-                      <ChevronRight className={`w-4 h-4 text-[#64748B] transition-transform ${isSelected ? "text-[#38BDF8] translate-x-0.5" : ""}`} />
+                      <ChevronRight className={`w-4 h-4 text-[#94A3B8] transition-transform ${isSelected ? "text-[#E2F952] translate-x-1" : ""}`} />
                     </div>
                   </button>
                 );
@@ -682,35 +676,32 @@ export default function LandingPage() {
 
             {/* Deep-Dive Inspection Card (Right Column) */}
             <div className="lg:col-span-7 sticky top-24">
-              <div className="p-8 rounded-2xl bg-[#0F172A] border border-[#1E293B] shadow-2xl relative overflow-hidden">
-                {/* Glow accent */}
-                <div className="absolute top-0 right-0 w-44 h-44 bg-[#0284C7]/10 rounded-full blur-2xl pointer-events-none" />
-
+              <div className="p-8 bg-[#141A23] border-2 border-black shadow-[6px_6px_0px_#000]">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-lg bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20 font-mono text-xs font-bold">
+                    <span className="px-3 py-1 bg-[#10141C] text-[#E2F952] border-2 border-black shadow-[2px_2px_0px_#000] font-mono text-xs font-bold">
                       {selectedOwasp.code}
                     </span>
                     <span
-                      className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md ${
+                      className={`text-xs font-mono font-bold px-2.5 py-1 border border-black shadow-[1.5px_1.5px_0px_#000] ${
                         selectedOwasp.severity === "Critical"
-                          ? "bg-red-950/80 text-red-400 border border-red-500/30"
+                          ? "bg-red-500/20 text-red-400"
                           : selectedOwasp.severity === "High"
-                          ? "bg-amber-950/80 text-amber-400 border border-amber-500/30"
-                          : "bg-blue-950/80 text-blue-400 border border-blue-500/30"
+                          ? "bg-amber-500/20 text-amber-400"
+                          : "bg-blue-500/20 text-blue-400"
                       }`}
                     >
                       {selectedOwasp.severity} Severity
                     </span>
                   </div>
-                  <span className="text-xs font-mono text-[#64748B]">OWASP Top 10 Standard</span>
+                  <span className="text-xs font-mono text-[#94A3B8]">OWASP Top 10 Standard</span>
                 </div>
 
                 <h3 className="text-2xl font-bold text-[#F8FAFC] mb-3">
                   {selectedOwasp.name}
                 </h3>
 
-                <p className="text-sm text-[#94A3B8] leading-relaxed mb-6">
+                <p className="text-sm text-[#94A3B8] leading-relaxed mb-6 font-sans">
                   {selectedOwasp.description}
                 </p>
 
@@ -720,7 +711,7 @@ export default function LandingPage() {
                     <Radar className="w-3.5 h-3.5" />
                     How Sniff Discovers & Verifies
                   </h4>
-                  <div className="p-4 rounded-xl bg-[#090D16] border border-[#1E293B] text-xs text-[#CBD5E1] leading-relaxed">
+                  <div className="p-4 bg-[#0A0D12] border-2 border-black shadow-[2px_2px_0px_#000] text-xs text-[#CBD5E1] leading-relaxed">
                     {selectedOwasp.howSniffDetects}
                   </div>
                 </div>
@@ -731,13 +722,13 @@ export default function LandingPage() {
                     <AlertTriangle className="w-3.5 h-3.5" />
                     Concrete Evidence Triggers Extracted
                   </h4>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {selectedOwasp.evidenceTriggers.map((ev, i) => (
                       <div
                         key={i}
-                        className="px-3 py-2 rounded-lg bg-[#090D16] border border-[#1E293B] text-xs font-mono text-[#94A3B8] flex items-center gap-2"
+                        className="px-3 py-2 bg-[#0A0D12] border border-black shadow-[1.5px_1.5px_0px_#000] text-xs font-mono text-[#94A3B8] flex items-center gap-2"
                       >
-                        <span className="text-[#38BDF8]">•</span>
+                        <span className="text-[#E2F952] font-bold">»</span>
                         <span>{ev}</span>
                       </div>
                     ))}
@@ -750,7 +741,7 @@ export default function LandingPage() {
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Recommended Developer Remediation
                   </h4>
-                  <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-300 leading-relaxed font-sans">
+                  <div className="p-4 bg-[#0A1A14] border-2 border-black shadow-[2px_2px_0px_#000] text-xs text-emerald-300 leading-relaxed font-sans">
                     {selectedOwasp.remediation}
                   </div>
                 </div>
@@ -761,14 +752,14 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────────── CALL TO ACTION BANNER ────────────────── */}
-      <section className="py-20 px-6 lg:px-12 bg-gradient-to-b from-[#090D16] to-[#0B101D] border-t border-[#1E293B] relative overflow-hidden">
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="w-16 h-16 rounded-2xl bg-[#0284C7]/15 border border-[#0284C7]/30 text-[#38BDF8] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-sky-500/10">
-            <Terminal className="w-8 h-8" />
+      <section className="py-20 px-6 lg:px-12 bg-[#0B0E14] border-t-2 border-black relative">
+        <div className="max-w-4xl mx-auto text-center p-10 bg-[#141A23] border-2 border-black shadow-[6px_6px_0px_#000]">
+          <div className="w-14 h-14 bg-[#E2F952] text-black border-2 border-black shadow-[3px_3px_0px_#000] flex items-center justify-center mx-auto mb-6 font-bold">
+            <Terminal className="w-7 h-7" />
           </div>
 
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-[#F8FAFC] tracking-tight mb-4">
-            Audit Your Application in Real-Time
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#F8FAFC] tracking-tight mb-4">
+            Audit Your Application in <span className="font-editorial italic font-normal text-[#E2F952]">Real-Time</span>
           </h2>
 
           <p className="text-sm sm:text-base text-[#94A3B8] max-w-2xl mx-auto mb-8">
@@ -777,7 +768,7 @@ export default function LandingPage() {
 
           <button
             onClick={handleStartScanning}
-            className="px-8 py-4 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-base font-bold shadow-xl shadow-sky-500/30 hover:shadow-sky-500/50 hover:-translate-y-0.5 transition-all duration-200 inline-flex items-center gap-3 cursor-pointer group"
+            className="brutal-btn-primary px-8 py-3.5 text-base inline-flex items-center gap-3 cursor-pointer group"
           >
             <span>Start Scanning Now</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -786,19 +777,19 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────────── FOOTER ────────────────── */}
-      <footer className="py-8 px-6 lg:px-12 border-t border-[#1E293B] bg-[#090D16] text-xs text-[#64748B] flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="py-8 px-6 lg:px-12 border-t-2 border-black bg-[#0E1217] text-xs text-[#94A3B8] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="font-brand text-lg text-[#F8FAFC] italic">
-            Sniff<span className="text-[#38BDF8]">.</span>
+            Sniff<span className="text-[#E2F952]">.</span>
           </span>
           <span className="text-[#475569]">|</span>
           <span>Agentic Web Application Security Reconnaissance</span>
         </div>
 
         <div className="flex items-center gap-6 font-mono text-[11px]">
-          <span>Phase 8 Standard</span>
-          <span>SQLite Ground Truth</span>
-          <span>Groq Reasoning Engine</span>
+          <span className="border-b border-black">Phase 8 Standard</span>
+          <span className="border-b border-black">SQLite Ground Truth</span>
+          <span className="border-b border-black">Groq Reasoning Engine</span>
         </div>
       </footer>
     </div>

@@ -224,18 +224,15 @@ export default function AuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
       <div 
-        className="relative w-full max-w-md bg-[#0F172A] border border-[#1E293B] rounded-2xl shadow-2xl overflow-hidden p-8"
+        className="relative w-full max-w-md bg-[#141A23] border-3 border-black rounded-2xl shadow-[6px_6px_0px_#000] overflow-hidden p-8"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Glow corner */}
-        <div className="absolute top-0 right-0 w-36 h-36 bg-[#0284C7]/15 rounded-full blur-2xl pointer-events-none" />
-
         {/* Close Button */}
         <button
           onClick={closeAuthModal}
-          className="absolute top-5 right-5 p-1.5 rounded-lg text-[#64748B] hover:text-[#F8FAFC] hover:bg-[#1E293B] transition cursor-pointer"
+          className="absolute top-5 right-5 p-1.5 rounded-lg bg-[#181F2A] border-2 border-black shadow-[1.5px_1.5px_0px_#000] text-[#94A3B8] hover:text-black hover:bg-[#EF4444] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -249,26 +246,26 @@ export default function AuthModal() {
                 setIsGooglePromptOpen(false);
                 setError(null);
               }}
-              className="flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-[#F8FAFC] mb-4 transition cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-[#E2F952] mb-4 transition cursor-pointer font-mono font-bold"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to standard login</span>
             </button>
 
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 border border-white/20 mb-3 shadow-md">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#0D1117] border-2 border-black shadow-[2px_2px_0px_#000] mb-3">
                 <GoogleIcon className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-[#F8FAFC]">
+              <h2 className="text-xl font-black text-[#F8FAFC]">
                 Sign in with Google
               </h2>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-[#94A3B8] mt-1 font-editorial italic">
                 Enter your Google Account to connect with Sniff Reconnaissance
               </p>
             </div>
 
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-950/40 border border-red-500/30 flex items-start gap-2.5 text-red-300 text-xs">
+              <div className="mb-4 p-3 rounded-lg bg-[#EF4444]/20 border-2 border-black shadow-[2px_2px_0px_#000] flex items-start gap-2.5 text-red-200 text-xs">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
                 <span>{error}</span>
               </div>
@@ -276,7 +273,7 @@ export default function AuthModal() {
 
             <form onSubmit={handleGoogleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                   Google Email Address
                 </label>
                 <div className="relative">
@@ -287,13 +284,13 @@ export default function AuthModal() {
                     value={googleEmail}
                     onChange={(e) => setGoogleEmail(e.target.value)}
                     placeholder="your.name@gmail.com"
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                   Full Name (Optional)
                 </label>
                 <div className="relative">
@@ -303,7 +300,7 @@ export default function AuthModal() {
                     value={googleName}
                     onChange={(e) => setGoogleName(e.target.value)}
                     placeholder="e.g. Alex Hunter"
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                   />
                 </div>
               </div>
@@ -311,11 +308,11 @@ export default function AuthModal() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-3 px-4 bg-white hover:bg-slate-100 text-[#0F172A] font-bold rounded-xl flex items-center justify-center gap-2.5 text-sm shadow-lg transition cursor-pointer disabled:opacity-50"
+                className="w-full mt-2 py-3 px-4 bg-white hover:bg-[#E2F952] text-black font-black border-2 border-black shadow-[3px_3px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 rounded-xl flex items-center justify-center gap-2.5 text-sm transition cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-800" />
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
                     <span>Connecting Google Account...</span>
                   </>
                 ) : (
@@ -332,13 +329,13 @@ export default function AuthModal() {
           <div>
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#0284C7]/10 border border-[#0284C7]/20 text-[#38BDF8] mb-3">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#0D1117] border-2 border-black shadow-[2px_2px_0px_#000] text-[#E2F952] mb-3">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-[#F8FAFC]">
+              <h2 className="text-xl font-black text-[#F8FAFC]">
                 {mode === "login" ? "Sign In to Sniff" : "Create Security Account"}
               </h2>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-[#94A3B8] mt-1 font-editorial italic">
                 {mode === "login"
                   ? "Access your scan history and security reconnaissance missions"
                   : "Register your analyst profile to isolate and track your scans"}
@@ -350,7 +347,7 @@ export default function AuthModal() {
               type="button"
               onClick={handleGoogleClick}
               disabled={loading}
-              className="w-full py-2.5 px-4 mb-4 bg-[#090D16] hover:bg-[#1E293B] border border-[#334155] text-[#F8FAFC] font-semibold rounded-xl flex items-center justify-center gap-3 text-sm shadow-sm transition hover:border-[#64748B] cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 mb-4 bg-[#181F2A] hover:bg-[#202938] border-2 border-black text-[#F8FAFC] font-bold rounded-xl flex items-center justify-center gap-3 text-sm shadow-[2.5px_2.5px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition cursor-pointer disabled:opacity-50"
             >
               <GoogleIcon className="w-4 h-4" />
               <span>{mode === "login" ? "Sign in with Google" : "Sign up with Google"}</span>
@@ -359,24 +356,24 @@ export default function AuthModal() {
             {/* Divider */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#1E293B]" />
+                <div className="w-full border-t-2 border-black" />
               </div>
-              <div className="relative flex justify-center text-[10px] uppercase font-mono">
-                <span className="bg-[#0F172A] px-2.5 text-[#64748B]">Or continue with credentials</span>
+              <div className="relative flex justify-center text-[10px] uppercase font-mono font-bold">
+                <span className="bg-[#141A23] px-2.5 text-[#94A3B8]">Or continue with credentials</span>
               </div>
             </div>
 
             {/* Mode Toggle Tabs */}
-            <div className="flex p-1 mb-6 bg-[#090D16] border border-[#1E293B] rounded-xl">
+            <div className="flex p-1 mb-6 bg-[#0D1117] border-2 border-black rounded-xl">
               <button
                 type="button"
                 onClick={() => {
                   setMode("login");
                   setError(null);
                 }}
-                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                className={`flex-1 py-2 text-xs font-black rounded-lg transition cursor-pointer ${
                   mode === "login"
-                    ? "bg-[#0284C7] text-white shadow-sm"
+                    ? "bg-[#E2F952] text-black border-2 border-black shadow-[2px_2px_0px_#000]"
                     : "text-[#94A3B8] hover:text-[#F8FAFC]"
                 }`}
               >
@@ -388,9 +385,9 @@ export default function AuthModal() {
                   setMode("signup");
                   setError(null);
                 }}
-                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                className={`flex-1 py-2 text-xs font-black rounded-lg transition cursor-pointer ${
                   mode === "signup"
-                    ? "bg-[#0284C7] text-white shadow-sm"
+                    ? "bg-[#E2F952] text-black border-2 border-black shadow-[2px_2px_0px_#000]"
                     : "text-[#94A3B8] hover:text-[#F8FAFC]"
                 }`}
               >
@@ -400,7 +397,7 @@ export default function AuthModal() {
 
             {/* Error Alert */}
             {error && (
-              <div className="mb-4 p-3 rounded-lg bg-red-950/40 border border-red-500/30 flex items-start gap-2.5 text-red-300 text-xs">
+              <div className="mb-4 p-3 rounded-lg bg-[#EF4444]/20 border-2 border-black shadow-[2px_2px_0px_#000] flex items-start gap-2.5 text-red-200 text-xs">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
                 <span>{error}</span>
               </div>
@@ -410,7 +407,7 @@ export default function AuthModal() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "login" ? (
                 <div>
-                  <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                  <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                     Username or Email
                   </label>
                   <div className="relative">
@@ -421,14 +418,14 @@ export default function AuthModal() {
                       value={usernameOrEmail}
                       onChange={(e) => setUsernameOrEmail(e.target.value)}
                       placeholder="e.g. security_lead or lead@recon.io"
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                     />
                   </div>
                 </div>
               ) : (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                    <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                       Analyst Username
                     </label>
                     <div className="relative">
@@ -439,13 +436,13 @@ export default function AuthModal() {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="Choose a username (min 3 chars)"
-                        className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                    <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                       Email Address
                     </label>
                     <div className="relative">
@@ -456,7 +453,7 @@ export default function AuthModal() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="analyst@domain.com"
-                        className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                        className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                       />
                     </div>
                   </div>
@@ -464,7 +461,7 @@ export default function AuthModal() {
               )}
 
               <div>
-                <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                   Password
                 </label>
                 <div className="relative">
@@ -475,14 +472,14 @@ export default function AuthModal() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password (min 6 chars)"
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                   />
                 </div>
               </div>
 
               {mode === "signup" && (
                 <div>
-                  <label className="block text-xs font-medium text-[#94A3B8] mb-1.5">
+                  <label className="block text-xs font-mono font-bold text-[#94A3B8] mb-1.5">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -493,7 +490,7 @@ export default function AuthModal() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter your password"
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#090D16] border border-[#1E293B] rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#38BDF8] transition"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#0D1117] border-2 border-black rounded-xl text-sm text-[#F8FAFC] placeholder-[#475569] focus:outline-hidden focus:border-[#E2F952] focus:shadow-[2px_2px_0px_#000] transition"
                     />
                   </div>
                 </div>
@@ -502,11 +499,11 @@ export default function AuthModal() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-3 px-4 bg-[#0284C7] hover:bg-[#0369A1] text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg shadow-sky-500/20 transition cursor-pointer disabled:opacity-50"
+                className="w-full mt-2 py-3 px-4 bg-[#E2F952] hover:bg-[#ECFD78] text-black font-black border-2 border-black shadow-[3px_3px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 rounded-xl flex items-center justify-center gap-2 text-sm transition cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
                     <span>Processing...</span>
                   </>
                 ) : (

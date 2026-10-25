@@ -59,18 +59,20 @@ export default function Metrics() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="border-b border-[#1E293B] pb-6">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl font-bold tracking-tight text-[#F8FAFC]">Security Telemetry & Surface Intelligence</h1>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#38BDF8]/10 text-[#38BDF8] border border-[#38BDF8]/20">
+      <div className="border-b-2 border-black pb-6">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#F8FAFC]">
+            Security Telemetry & Surface Intelligence
+          </h1>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-mono font-bold bg-[#141A23] text-[#38BDF8] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
             <Activity className="w-3 h-3 text-[#38BDF8]" />
             Live Analytics
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-mono font-bold bg-[#141A23] text-[#F59E0B] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
             Avg Runtime: {metrics.avg_runtime}s
           </span>
         </div>
-        <p className="text-xs text-[#94A3B8] mt-1">Telemetry overview of evaluated assets, severity breakdown, and reconnaissance performance.</p>
+        <p className="text-xs text-[#94A3B8] mt-1 font-sans">Telemetry overview of evaluated assets, severity breakdown, and <span className="font-editorial italic text-[#E2F952]">reconnaissance performance</span>.</p>
       </div>
 
       {/* Common Global Telemetry Strip */}
@@ -79,30 +81,30 @@ export default function Metrics() {
       {/* Grid: Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart 1: Findings by Severity */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm">
-          <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1E293B]">
+        <div className="bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] p-6">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b-2 border-black">
             <div>
               <h3 className="text-sm font-bold text-[#F8FAFC]">Vulnerability Distribution by Severity</h3>
-              <p className="text-[11px] text-[#64748B] mt-0.5">Exploitability risk spectrum across all completed scans</p>
+              <p className="text-[11px] text-[#94A3B8] mt-0.5 font-editorial italic">Exploitability risk spectrum across all completed scans</p>
             </div>
-            <span className="text-[10px] text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 px-2 py-0.5 rounded font-bold uppercase">Risk Spectrum</span>
+            <span className="text-[10px] text-white bg-[#EF4444] border border-black shadow-[1px_1px_0px_#000] px-2 py-0.5 font-mono font-bold uppercase">Risk Spectrum</span>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={metrics.findings_by_severity} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <XAxis dataKey="severity" stroke="#64748B" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748B" fontSize={11} tickLine={false} allowDecimals={false} />
+                <XAxis dataKey="severity" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#0F172A", borderColor: "#1E293B", borderRadius: "8px", fontSize: "12px" }}
+                  contentStyle={{ backgroundColor: "#0E1217", border: "2px solid #000000", boxShadow: "3px 3px 0px #000000", borderRadius: "0px", fontSize: "12px" }}
                   labelStyle={{ color: "#F8FAFC", fontWeight: "bold" }}
                 />
-                <Bar dataKey="count" fill="#38BDF8" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" fill="#38BDF8" radius={[0, 0, 0, 0]}>
                   {metrics.findings_by_severity.map((entry, index) => {
                     const color = entry.severity === "Critical" ? "#DC2626" :
                                   entry.severity === "High" ? "#EF4444" :
                                   entry.severity === "Medium" ? "#F59E0B" :
                                   entry.severity === "Low" ? "#EAB308" : "#38BDF8";
-                    return <Cell key={`cell-${index}`} fill={color} />;
+                    return <Cell key={`cell-${index}`} fill={color} stroke="#000000" strokeWidth={1.5} />;
                   })}
                 </Bar>
               </BarChart>
@@ -111,24 +113,24 @@ export default function Metrics() {
         </div>
 
         {/* Chart 2: Mission Runtime Trend */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm">
-          <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1E293B]">
+        <div className="bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] p-6">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b-2 border-black">
             <div>
               <h3 className="text-sm font-bold text-[#F8FAFC]">Reconnaissance Latency Trend</h3>
-              <p className="text-[11px] text-[#64748B] mt-0.5">End-to-end mission runtime duration across historical runs</p>
+              <p className="text-[11px] text-[#94A3B8] mt-0.5 font-editorial italic">End-to-end mission runtime duration across historical runs</p>
             </div>
-            <span className="text-[10px] text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/30 px-2 py-0.5 rounded font-bold uppercase">Latency (s)</span>
+            <span className="text-[10px] text-black bg-[#E2F952] border border-black shadow-[1px_1px_0px_#000] px-2 py-0.5 font-mono font-bold uppercase">Latency (s)</span>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={metrics.mission_runtime_trend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <XAxis dataKey="mission_id" stroke="#64748B" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748B" fontSize={11} tickLine={false} unit="s" />
+                <XAxis dataKey="mission_id" stroke="#94A3B8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} unit="s" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#0F172A", borderColor: "#1E293B", borderRadius: "8px", fontSize: "12px" }}
+                  contentStyle={{ backgroundColor: "#0E1217", border: "2px solid #000000", boxShadow: "3px 3px 0px #000000", borderRadius: "0px", fontSize: "12px" }}
                   labelStyle={{ color: "#F8FAFC", fontWeight: "bold" }}
                 />
-                <Line type="monotone" dataKey="runtime" stroke="#F59E0B" strokeWidth={2.5} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="runtime" stroke="#E2F952" strokeWidth={2.5} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -138,13 +140,13 @@ export default function Metrics() {
       {/* Grid: Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart 3: Attack Surface Distribution */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm">
-          <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1E293B]">
+        <div className="bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] p-6">
+          <div className="flex justify-between items-center mb-5 pb-3 border-b-2 border-black">
             <div>
               <h3 className="text-sm font-bold text-[#F8FAFC]">Classified Surface Distribution</h3>
-              <p className="text-[11px] text-[#64748B] mt-0.5">Application components evaluated by feature classification workers</p>
+              <p className="text-[11px] text-[#94A3B8] mt-0.5 font-editorial italic">Application components evaluated by feature classification workers</p>
             </div>
-            <span className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 px-2 py-0.5 rounded font-bold uppercase">Component Share</span>
+            <span className="text-[10px] text-white bg-[#8B5CF6] border border-black shadow-[1px_1px_0px_#000] px-2 py-0.5 font-mono font-bold uppercase">Component Share</span>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -163,62 +165,62 @@ export default function Metrics() {
                   nameKey="name"
                 >
                   {(metrics.feature_distribution || []).map((_entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#000000" strokeWidth={1.5} />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ backgroundColor: "#0F172A", borderColor: "#1E293B", borderRadius: "8px", fontSize: "12px" }}
+                  contentStyle={{ backgroundColor: "#0E1217", border: "2px solid #000000", boxShadow: "3px 3px 0px #000000", borderRadius: "0px", fontSize: "12px" }}
                   itemStyle={{ color: "#F8FAFC" }}
                 />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: 10, color: "#94A3B8" }} />
+                <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ fontSize: 10, color: "#94A3B8" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Telemetry Operational Card */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl shadow-sm flex flex-col justify-between">
+        <div className="bg-[#141A23] border-2 border-black shadow-[4px_4px_0px_#000] p-6 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-[#1E293B]">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b-2 border-black">
               <div>
                 <h3 className="text-sm font-bold text-[#F8FAFC]">Autonomous Pipeline Architecture</h3>
-                <p className="text-[11px] text-[#64748B] mt-0.5">Distributed multi-worker execution pipeline overview</p>
+                <p className="text-[11px] text-[#94A3B8] mt-0.5 font-editorial italic">Distributed multi-worker execution pipeline overview</p>
               </div>
-              <span className="px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30 text-[10px] font-bold">
+              <span className="px-2.5 py-0.5 bg-[#10B981] text-black border border-black shadow-[1px_1px_0px_#000] text-[10px] font-mono font-bold">
                 Healthy
               </span>
             </div>
 
             <div className="space-y-3 mt-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+              <div className="flex items-center justify-between p-3.5 bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000]">
                 <div className="flex items-center gap-2.5">
                   <Compass className="w-4 h-4 text-[#38BDF8]" />
-                  <span className="text-xs font-semibold text-[#F8FAFC]">Reconnaissance Worker</span>
+                  <span className="text-xs font-bold text-[#F8FAFC]">Reconnaissance Worker</span>
                 </div>
-                <span className="text-[10px] text-[#64748B] font-mono">DOM & Route Parsing</span>
+                <span className="text-[10px] text-[#94A3B8] font-mono">DOM & Route Parsing</span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+              <div className="flex items-center justify-between p-3.5 bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000]">
                 <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 text-[#8B5CF6]" />
-                  <span className="text-xs font-semibold text-[#F8FAFC]">Feature Classifier</span>
+                  <Layers className="w-4 h-4 text-[#C084FC]" />
+                  <span className="text-xs font-bold text-[#F8FAFC]">Feature Classifier</span>
                 </div>
-                <span className="text-[10px] text-[#64748B] font-mono">Structural Component Tagging</span>
+                <span className="text-[10px] text-[#94A3B8] font-mono">Structural Component Tagging</span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+              <div className="flex items-center justify-between p-3.5 bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000]">
                 <div className="flex items-center gap-2.5">
                   <ShieldCheck className="w-4 h-4 text-[#10B981]" />
-                  <span className="text-xs font-semibold text-[#F8FAFC]">Security Reasoning Agent</span>
+                  <span className="text-xs font-bold text-[#F8FAFC]">Security Reasoning Agent</span>
                 </div>
-                <span className="text-[10px] text-[#64748B] font-mono">Vulnerability Discovery</span>
+                <span className="text-[10px] text-[#94A3B8] font-mono">Vulnerability Discovery</span>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-[#1E293B] mt-5 pt-3 flex justify-between items-center text-[11px] text-[#64748B]">
-            <span>Automated SQLite persistence</span>
-            <span className="font-mono text-[10px]">Phase 8 Active Mode</span>
+          <div className="border-t-2 border-black mt-5 pt-3 flex justify-between items-center text-[11px] text-[#94A3B8]">
+            <span className="font-editorial italic">Automated SQLite persistence</span>
+            <span className="font-mono text-[10px] font-bold border-b border-black">Phase 8 Active Mode</span>
           </div>
         </div>
       </div>

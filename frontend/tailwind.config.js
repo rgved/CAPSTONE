@@ -20,6 +20,8 @@ export default {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         brand: ["'Abril Fatface'", "serif"],
+        editorial: ["'Newsreader'", "Georgia", "serif"],
+        mono: ["'JetBrains Mono'", "monospace"],
       },
     },
   },

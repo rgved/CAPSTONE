@@ -34,15 +34,86 @@ body {
   background: #3B82F6;
 }
 
-/* Custom styles and premium glassmorphism classes */
+/* Subtle Neubrutalism Design Tokens */
+.keyword-italic {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.brutal-card {
+  background-color: #141A23;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brutal-card-hover {
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brutal-card-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px #000000;
+}
+
+.brutal-btn-primary {
+  background-color: #E2F952;
+  color: #000000;
+  font-weight: 700;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  transition: all 120ms ease-out;
+  cursor: pointer;
+}
+
+.brutal-btn-primary:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0px #000000;
+  background-color: #ECFD78;
+}
+
+.brutal-btn-primary:active {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.brutal-btn-secondary {
+  background-color: #181F2A;
+  color: #F8FAFC;
+  font-weight: 600;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  transition: all 120ms ease-out;
+  cursor: pointer;
+}
+
+.brutal-btn-secondary:hover {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0px #000000;
+  background-color: #222B3A;
+  color: #FFFFFF;
+}
+
+.brutal-btn-secondary:active {
+  transform: translate(1.5px, 1.5px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.brutal-badge {
+  border: 1.5px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+/* Fallback for backward compatibility */
 .glass-panel {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid #1F2937;
+  background-color: #141A23;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 50%, #22C55E 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #E2F952;
+  font-style: italic;
+  font-family: 'Newsreader', Georgia, serif;
 }

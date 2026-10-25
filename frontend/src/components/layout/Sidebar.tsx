@@ -20,8 +20,8 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-[280px] min-h-screen bg-[#090D16] border-r border-[#1E293B] flex flex-col shrink-0">
-      <div className="p-6 border-b border-[#1E293B] flex items-center justify-between">
+    <aside className="w-[280px] min-h-screen bg-[#0E1217] border-r-2 border-black flex flex-col shrink-0">
+      <div className="p-6 border-b-2 border-black flex items-center justify-between">
         <Logo size="md" />
       </div>
       <nav className="flex-1 px-4 py-6 space-y-2">
@@ -30,10 +30,10 @@ export default function Sidebar() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 group ${
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold transition-all duration-150 group ${
                 isActive
-                  ? "bg-[#0284C7] text-white shadow-lg shadow-sky-500/20"
-                  : "text-[#94A3B8] hover:bg-[#1E293B]/50 hover:text-[#F8FAFC]"
+                  ? "bg-[#E2F952] text-black border-2 border-black shadow-[2.5px_2.5px_0px_#000] translate-x-0.5"
+                  : "text-[#94A3B8] border-2 border-transparent hover:border-black hover:bg-[#141A23] hover:text-[#F8FAFC] hover:shadow-[2px_2px_0px_#000]"
               }`
             }
           >
@@ -42,8 +42,9 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-6 border-t border-[#1E293B] text-center text-xs text-[#64748B] font-mono">
-        Phase 8 Active Mode
+      <div className="p-6 border-t-2 border-black text-center text-xs text-[#94A3B8] font-mono font-bold bg-[#141A23]">
+        <span className="font-editorial italic text-white mr-1.5">Sniff Engine</span>
+        Phase 8 Mode
       </div>
     </aside>
   );

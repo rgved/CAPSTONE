@@ -131,20 +131,20 @@ export default function MissionDetail() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header navigation bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1E293B] pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-2 border-black pb-5">
         <div className="flex items-center gap-3">
-          <Link to="/" className="p-2 bg-[#0F172A] border border-[#1E293B] rounded-lg text-[#64748B] hover:text-[#F8FAFC] transition-colors">
+          <Link to="/" className="p-2.5 bg-[#141A23] border-2 border-black rounded shadow-[2px_2px_0px_#000000] hover:bg-[#1E293B] text-[#94A3B8] hover:text-[#F8FAFC] transition-transform active:translate-x-0.5 active:translate-y-0.5">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
             <div className="flex items-center gap-2 text-[11px] text-[#64748B]">
               <Link to="/" className="hover:underline">Missions</Link>
               <ChevronRight className="w-3 h-3" />
-              <span className="font-mono text-[#38BDF8]">{mission.mission_id}</span>
+              <span className="font-mono text-[#E2F952]">{mission.mission_id}</span>
             </div>
-            <h1 className="text-xl font-bold text-[#F8FAFC] mt-0.5">
+            <h1 className="text-xl font-bold text-[#F8FAFC] mt-0.5 tracking-tight">
               <span>Mission </span>
-              <span>Inspection Window</span>
+              <span className="font-editorial italic font-normal text-[#E2F952]">Inspection Window</span>
             </h1>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function MissionDetail() {
         {mission.report_id && (
           <Link
             to={`/reports?id=${mission.report_id}`}
-            className="px-4 py-2.5 bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-sky-500/20"
+            className="px-4 py-2 bg-[#E2F952] text-black font-extrabold text-xs rounded border-2 border-black shadow-[3px_3px_0px_#000000] hover:shadow-[1px_1px_0px_#000000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center gap-1.5"
           >
             <FileText className="w-4 h-4" /> Read Security Report
           </Link>
@@ -163,10 +163,10 @@ export default function MissionDetail() {
       <SecurityMetricsStrip variant="full" />
 
       {/* Section 1 — Mission Summary */}
-      <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 shadow-sm">
+      <div className="bg-[#141A23] border-2 border-black p-5 rounded shadow-[4px_4px_0px_#000000] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div>
           <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Mission ID</p>
-          <p className="text-sm font-mono font-bold text-[#38BDF8] mt-1">{mission.mission_id}</p>
+          <p className="text-sm font-mono font-bold text-[#E2F952] mt-1">{mission.mission_id}</p>
         </div>
         <div>
           <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Target Domain</p>
@@ -174,7 +174,7 @@ export default function MissionDetail() {
             href={mission.target_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-[#F8FAFC] hover:text-[#38BDF8] hover:underline mt-1 truncate max-w-xs block"
+            className="text-sm font-medium text-[#F8FAFC] hover:text-[#E2F952] hover:underline mt-1 truncate max-w-xs block font-mono"
             title={mission.target_url}
           >
             {mission.target_url || "https://example.com"}
@@ -183,10 +183,10 @@ export default function MissionDetail() {
         <div>
           <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Execution Status</p>
           <div className="mt-1">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-              mission.status === "completed" ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30" :
-              mission.status === "failed" ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30" :
-              "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30 animate-pulse"
+            <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_#000000] ${
+              mission.status === "completed" ? "bg-[#10B981] text-black" :
+              mission.status === "failed" ? "bg-[#EF4444] text-white" :
+              "bg-[#F59E0B] text-black animate-pulse"
             }`}>
               {mission.status}
             </span>
@@ -194,13 +194,13 @@ export default function MissionDetail() {
         </div>
         <div>
           <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Total Runtime</p>
-          <p className="text-sm font-semibold text-[#F8FAFC] mt-1 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-[#38BDF8]" /> {mission.runtime}
+          <p className="text-sm font-semibold text-[#F8FAFC] mt-1 flex items-center gap-1.5 font-mono">
+            <Clock className="w-3.5 h-3.5 text-[#E2F952]" /> {mission.runtime}
           </p>
         </div>
         <div>
           <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Generated At</p>
-          <p className="text-sm font-medium text-[#64748B] mt-1 flex items-center gap-1.5">
+          <p className="text-sm font-medium text-[#94A3B8] mt-1 flex items-center gap-1.5 font-mono text-xs">
             <Calendar className="w-3.5 h-3.5 text-[#64748B]" /> {mission.generated_at ? new Date(mission.generated_at).toLocaleString() : "Unknown"}
           </p>
         </div>
@@ -209,45 +209,45 @@ export default function MissionDetail() {
       {/* Grid: Recon and Features */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Section 2 — Recon Discovery Summary */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl xl:col-span-2 space-y-5 shadow-sm">
-          <h3 className="text-sm font-bold text-[#F8FAFC] border-b border-[#1E293B] pb-3 flex items-center gap-2">
-            <Compass className="w-4 h-4 text-[#38BDF8]" /> Recon Discovery Summary
+        <div className="bg-[#141A23] border-2 border-black p-5 rounded shadow-[4px_4px_0px_#000000] xl:col-span-2 space-y-5">
+          <h3 className="text-sm font-bold text-[#F8FAFC] border-b-2 border-black pb-3 flex items-center gap-2">
+            <Compass className="w-4 h-4 text-[#E2F952]" /> <span>Recon </span><span className="font-editorial italic font-normal text-[#E2F952]">Discovery Summary</span>
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Routes</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.routes}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Routes</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.routes}</p>
             </div>
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Forms</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.forms}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Forms</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.forms}</p>
             </div>
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Inputs</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.inputs}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Inputs</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.inputs}</p>
             </div>
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Buttons</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.buttons}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Buttons</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.buttons}</p>
             </div>
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Scripts</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.scripts}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Scripts</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.scripts}</p>
             </div>
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Links</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.links}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Links</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.links}</p>
             </div>
-            <div className="bg-[#090D16] border border-[#1E293B] p-3.5 rounded-lg">
-              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Meta Tags</span>
-              <p className="text-xl font-bold text-[#F8FAFC] mt-1">{mission.recon_summary.meta_tags}</p>
+            <div className="bg-[#0E1217] border-2 border-black p-3.5 rounded shadow-[2px_2px_0px_#000000]">
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">Meta Tags</span>
+              <p className="text-xl font-bold font-mono text-[#F8FAFC] mt-1">{mission.recon_summary.meta_tags}</p>
             </div>
           </div>
           {(mission.recon_summary.is_spa || (mission.recon_summary.forms === 0 && mission.recon_summary.inputs === 0 && mission.recon_summary.scripts > 0)) && (
-            <div className="flex items-start gap-3 p-3.5 rounded-lg bg-[#38BDF8]/10 border border-[#38BDF8]/30 text-xs text-[#BAE6FD]">
-              <Sparkles className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-3.5 rounded bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000000] text-xs text-[#CBD5E1]">
+              <Sparkles className="w-4 h-4 text-[#E2F952] shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-[#F8FAFC] block">Client-Side Rendered (SPA) Application</span>
+                <span className="font-bold text-[#F8FAFC] block font-mono">Client-Side Rendered (SPA) Application</span>
                 Target renders UI elements dynamically in the browser DOM via JavaScript bundles. Interactive components (forms, inputs, buttons) are mounted at client runtime rather than static server HTML.
               </div>
             </div>
@@ -255,12 +255,12 @@ export default function MissionDetail() {
         </div>
 
         {/* Section 3 — Feature Summary & Attack Surface */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl space-y-5 shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+        <div className="bg-[#141A23] border-2 border-black p-5 rounded shadow-[4px_4px_0px_#000000] space-y-5">
+          <div className="flex items-center justify-between border-b-2 border-black pb-3">
             <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
-              <Layers className="w-4 h-4 text-[#8B5CF6]" /> Surface Capabilities
+              <Layers className="w-4 h-4 text-[#E2F952]" /> <span>Surface </span><span className="font-editorial italic font-normal text-[#E2F952]">Capabilities</span>
             </h3>
-            <span className="text-[10px] font-mono text-[#64748B]">
+            <span className="text-[10px] font-mono text-[#94A3B8] bg-[#0E1217] px-2 py-0.5 rounded border border-black">
               {mission.features.length} Components
             </span>
           </div>
@@ -276,28 +276,28 @@ export default function MissionDetail() {
                 const featHasMed = findingsOnFeature.some(item => item.severity?.toLowerCase() === "medium");
 
                 return (
-                  <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-[#090D16] border border-[#1E293B]">
+                  <div key={idx} className="flex justify-between items-center p-3 rounded bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000000]">
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-2 h-2 rounded-full ${
+                      <div className={`w-2.5 h-2.5 rounded-full border border-black ${
                         findingsOnFeature.length > 0 
                           ? (featHasCritical ? "bg-[#DC2626]" : featHasHigh ? "bg-[#EF4444]" : "bg-[#F59E0B]")
                           : "bg-[#10B981]"
                       }`}></div>
                       <div>
                         <span className="text-xs font-bold text-[#F8FAFC] block">{label}</span>
-                        <span className="text-[10px] text-[#64748B]">
+                        <span className="text-[10px] text-[#94A3B8] font-mono">
                           {findingsOnFeature.length > 0 ? `${findingsOnFeature.length} finding${findingsOnFeature.length > 1 ? 's' : ''} identified` : "Component evaluated clean"}
                         </span>
                       </div>
                     </div>
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                    <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded border border-black shadow-[1.5px_1.5px_0px_#000000] ${
                       findingsOnFeature.length > 0
                         ? (featHasCritical
-                            ? "text-[#DC2626] border-[#DC2626]/30 bg-[#DC2626]/10"
+                            ? "text-black bg-[#DC2626]"
                             : featHasHigh 
-                            ? "text-[#EF4444] border-[#EF4444]/30 bg-[#EF4444]/10" 
-                            : "text-[#F59E0B] border-[#F59E0B]/30 bg-[#F59E0B]/10")
-                        : "text-[#10B981] border-[#10B981]/30 bg-[#10B981]/10"
+                            ? "text-black bg-[#EF4444]" 
+                            : "text-black bg-[#F59E0B]")
+                        : "text-black bg-[#10B981]"
                     }`}>
                       {findingsOnFeature.length > 0 
                         ? (featHasCritical ? "Critical Risk" : featHasHigh ? "High Risk" : featHasMed ? "Moderate Risk" : "Hardening")
@@ -327,41 +327,41 @@ export default function MissionDetail() {
           const activeOwasp = Array.from(owaspMap.entries()).map(([code, name]) => ({ code, name }));
 
           return (
-            <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl space-y-5 flex flex-col justify-between shadow-sm">
+            <div className="bg-[#141A23] border-2 border-black p-5 rounded shadow-[4px_4px_0px_#000000] space-y-5 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
+                <div className="flex items-center justify-between border-b-2 border-black pb-3">
                   <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-[#EF4444]" /> OWASP Top 10 Risk Mapping
                   </h3>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border ${
-                    hasCritical ? "bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/30" :
-                    hasHigh ? "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30" :
-                    hasMedium ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30" :
-                    "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30"
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_#000000] ${
+                    hasCritical ? "bg-[#DC2626] text-black" :
+                    hasHigh ? "bg-[#EF4444] text-white" :
+                    hasMedium ? "bg-[#F59E0B] text-black" :
+                    "bg-[#10B981] text-black"
                   }`}>
                     {hasCritical ? "Critical Exposure" : hasHigh ? "High Risk Surface" : hasMedium ? "Moderate Risk" : "Hardened"}
                   </span>
                 </div>
 
                 <p className="text-xs text-[#94A3B8] mt-3 leading-relaxed">
-                  Discovered findings are aligned with the <strong>OWASP Top 10: 2025</strong> framework to prioritize defensive remediation.
+                  Discovered findings are aligned with the <strong className="text-[#F8FAFC]">OWASP Top 10: 2025</strong> framework to prioritize defensive remediation.
                 </p>
 
                 <div className="mt-4 space-y-2">
                   {activeOwasp.length === 0 ? (
-                    <div className="p-3 bg-[#090D16] border border-[#1E293B] rounded-lg text-center text-xs text-[#64748B] italic">
+                    <div className="p-3 bg-[#0E1217] border-2 border-black rounded shadow-[2px_2px_0px_#000000] text-center text-xs text-[#64748B] italic">
                       No OWASP Top 10 vulnerabilities detected in current scope.
                     </div>
                   ) : (
                     activeOwasp.map((cat, i) => (
-                      <div key={i} className="flex items-center justify-between p-2.5 bg-[#090D16] border border-[#1E293B] rounded-lg">
+                      <div key={i} className="flex items-center justify-between p-2.5 bg-[#0E1217] border-2 border-black rounded shadow-[2px_2px_0px_#000000]">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-extrabold text-[#38BDF8] bg-[#38BDF8]/10 px-1.5 py-0.5 rounded border border-[#38BDF8]/20">
+                          <span className="text-[10px] font-mono font-black text-black bg-[#E2F952] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000000]">
                             {cat.code}
                           </span>
                           <span className="text-xs font-medium text-[#F8FAFC]">{cat.name}</span>
                         </div>
-                        <span className="text-[10px] font-bold text-[#EF4444] bg-[#EF4444]/10 px-2 py-0.5 rounded border border-[#EF4444]/20">
+                        <span className="text-[10px] font-black text-black bg-[#EF4444] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000000]">
                           Active
                         </span>
                       </div>
@@ -370,9 +370,9 @@ export default function MissionDetail() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#1E293B] flex items-center justify-between text-xs">
-                <span className="text-[#64748B]">Audit Perimeter:</span>
-                <span className="font-semibold text-[#10B981] flex items-center gap-1">
+              <div className="pt-3 border-t-2 border-black flex items-center justify-between text-xs">
+                <span className="text-[#94A3B8]">Audit Perimeter:</span>
+                <span className="font-bold text-[#10B981] flex items-center gap-1 font-mono">
                   <ShieldCheck className="w-3.5 h-3.5" /> 100% Scope Audited
                 </span>
               </div>
@@ -381,29 +381,29 @@ export default function MissionDetail() {
         })()}
 
         {/* Section 5 — Mission Timeline */}
-        <div className="bg-[#0F172A] border border-[#1E293B] p-5 rounded-xl xl:col-span-2 space-y-5 shadow-sm">
-          <h3 className="text-sm font-bold text-[#F8FAFC] border-b border-[#1E293B] pb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#F59E0B]" /> Execution Timeline
+        <div className="bg-[#141A23] border-2 border-black p-5 rounded shadow-[4px_4px_0px_#000000] xl:col-span-2 space-y-5">
+          <h3 className="text-sm font-bold text-[#F8FAFC] border-b-2 border-black pb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#E2F952]" /> <span>Execution </span><span className="font-editorial italic font-normal text-[#E2F952]">Timeline</span>
           </h3>
           <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
             {!timeline || timeline.length === 0 ? (
               <p className="text-xs text-[#64748B] italic py-4">No task logs available for this mission.</p>
             ) : (
               timeline.map((t, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-[#090D16] border border-[#1E293B] rounded-lg">
+                <div key={idx} className="flex items-center justify-between p-3 bg-[#0E1217] border-2 border-black rounded shadow-[2px_2px_0px_#000000]">
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${
+                    <div className={`w-2.5 h-2.5 rounded-full border border-black ${
                       t.status === "completed" ? "bg-[#10B981]" :
                       t.status === "failed" ? "bg-[#EF4444]" : "bg-[#F59E0B] animate-pulse"
                     }`}></div>
                     <span className="text-xs font-mono font-bold text-[#F8FAFC]">{t.task}</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                      t.status === "completed" ? "text-[#10B981]" :
-                      t.status === "failed" ? "text-[#EF4444]" : "text-[#F59E0B]"
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000000] ${
+                      t.status === "completed" ? "text-black bg-[#10B981]" :
+                      t.status === "failed" ? "text-white bg-[#EF4444]" : "text-black bg-[#F59E0B]"
                     }`}>{t.status}</span>
-                    <span className="text-[10px] font-mono text-[#64748B]">
+                    <span className="text-[10px] font-mono text-[#94A3B8]">
                       {new Date(t.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
@@ -416,66 +416,67 @@ export default function MissionDetail() {
 
       {/* Section 6 — Findings list */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1E293B] pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3">
           <h3 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-[#38BDF8]" /> Security Findings ({mission.findings.length})
+            <ShieldAlert className="w-4 h-4 text-[#E2F952]" /> <span>Security </span><span className="font-editorial italic font-normal text-[#E2F952]">Findings</span> ({mission.findings.length})
           </h3>
-          <span className="text-xs text-[#64748B]">Click any card to inspect reasoning and evidence logs</span>
+          <span className="text-xs text-[#94A3B8]">Click any card to inspect reasoning and evidence logs</span>
         </div>
 
         <div className="space-y-3">
           {mission.findings.length === 0 ? (
-            <div className="p-8 text-center bg-[#0F172A] border border-[#1E293B] rounded-xl text-xs text-[#64748B]">
+            <div className="p-8 text-center bg-[#141A23] border-2 border-black rounded shadow-[3px_3px_0px_#000000] text-xs text-[#94A3B8]">
               No security weaknesses were detected for this route perimeter.
             </div>
           ) : (
             mission.findings.map(f => {
-              const style = getSeverityStyle(f.severity);
               const isExpanded = !!expandedFindings[f.finding_id];
+              const sev = f.severity?.toLowerCase();
+              const badgeBg = sev === "critical" ? "bg-[#DC2626] text-black" : sev === "high" ? "bg-[#EF4444] text-white" : sev === "medium" ? "bg-[#F59E0B] text-black" : "bg-[#10B981] text-black";
 
               return (
                 <div
                   key={f.finding_id}
-                  className={`border rounded-xl bg-[#0F172A] p-5 transition-all shadow-sm ${style.border}`}
+                  className="border-2 border-black rounded bg-[#141A23] p-5 shadow-[3px_3px_0px_#000000] transition-all"
                 >
                   <div
                     className="flex justify-between items-center cursor-pointer select-none"
                     onClick={() => toggleFinding(f.finding_id)}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide border ${style.bg} ${style.border} ${style.text}`}>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wide border border-black shadow-[1.5px_1.5px_0px_#000000] ${badgeBg}`}>
                         {f.severity}
                       </span>
                       <h4 className="text-xs font-bold text-[#F8FAFC]">{f.title}</h4>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-mono text-[#64748B]">{f.finding_id}</span>
-                      {isExpanded ? <ChevronUp className="w-4 h-4 text-[#64748B]" /> : <ChevronDown className="w-4 h-4 text-[#64748B]" />}
+                      <span className="text-[11px] font-mono text-[#94A3B8]">{f.finding_id}</span>
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-[#94A3B8]" /> : <ChevronDown className="w-4 h-4 text-[#94A3B8]" />}
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-[#1E293B] space-y-4 text-xs animate-fadeIn">
+                    <div className="mt-4 pt-4 border-t-2 border-black space-y-4 text-xs animate-fadeIn">
                       <div>
-                        <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block mb-1">Description</span>
-                        <p className="text-[#94A3B8] leading-relaxed">{f.description}</p>
+                        <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider block mb-1">Description</span>
+                        <p className="text-[#CBD5E1] leading-relaxed">{f.description}</p>
                       </div>
 
                       {f.reasoning && (
                         <div>
-                          <span className="text-[10px] font-bold text-[#8B5CF6] uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                            <Sparkles className="w-3.5 h-3.5" /> Explainable Security Reasoning
+                          <span className="text-[10px] font-black text-[#E2F952] uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-[#E2F952]" /> Explainable Security Reasoning
                           </span>
-                          <div className="p-3.5 rounded-lg bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 text-[#DDD6FE]">
-                            <p className="leading-relaxed italic">{f.reasoning}</p>
+                          <div className="p-3.5 rounded bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000000] text-[#F8FAFC]">
+                            <p className="leading-relaxed font-editorial italic text-sm">{f.reasoning}</p>
                           </div>
                         </div>
                       )}
 
                       {f.recommendation && (
                         <div>
-                          <span className="text-[10px] font-bold text-[#10B981] uppercase tracking-wider block mb-1">Recommended Remediation</span>
-                          <div className="p-3 rounded-lg bg-[#10B981]/5 border border-[#10B981]/20 text-[#A7F3D0]">
+                          <span className="text-[10px] font-black text-[#10B981] uppercase tracking-wider block mb-1">Recommended Remediation</span>
+                          <div className="p-3.5 rounded bg-[#0E1217] border-2 border-black shadow-[2px_2px_0px_#000000] text-[#CBD5E1]">
                             <p className="leading-relaxed">{f.recommendation}</p>
                           </div>
                         </div>
@@ -483,8 +484,8 @@ export default function MissionDetail() {
 
                       {f.evidence && f.evidence.length > 0 && (
                         <div>
-                          <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block mb-1">Evidence</span>
-                          <div className="bg-[#090D16] border border-[#1E293B] p-3 rounded-lg space-y-1 font-mono text-[10px] text-[#38BDF8]">
+                          <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider block mb-1">Evidence</span>
+                          <div className="bg-[#090D16] border-2 border-black p-3 rounded shadow-[2px_2px_0px_#000000] space-y-1 font-mono text-[10px] text-[#E2F952]">
                             {f.evidence.map((ev, i) => (
                               <div key={i} className="flex gap-2">
                                 <span className="text-[#64748B] select-none">{i + 1}.</span>
