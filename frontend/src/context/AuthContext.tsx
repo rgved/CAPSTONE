@@ -5,6 +5,8 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  avatar_url?: string;
+  auth_provider?: string;
   created_at?: string;
 }
 
@@ -79,6 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("sniff_token");
     setToken(null);
     setUser(null);
+    if (typeof window !== "undefined" && window.location.pathname !== "/") {
+      window.location.href = "/";
+    }
   };
 
   return (

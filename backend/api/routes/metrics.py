@@ -1,10 +1,11 @@
-from fastapi import APIRouter
-from typing import List, Dict, Any
+from fastapi import APIRouter, Header
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 import json
 import logging
 from backend.memory.sqlite.database import get_connection
 from backend.api.routes.missions import get_missions
+from backend.api.routes.auth import get_current_user_from_header
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -36,21 +37,46 @@ def get_mission_runtimes_map() -> Dict[str, float]:
         conn.close()
 
 @router.get("/metrics")
-def get_metrics_summary():
+def get_metrics_summary(authorization: Optional[str] = Header(None)):
+    user = get_current_user_from_header(authorization)
+    missions = get_missions(authorization=authorization)
+    total_missions = len(missions)
+
+    if user and total_missions == 0:
+        return {
+            "total_missions": 0,
+            "total_findings": 0,
+            "avg_runtime": 0.0,
+            "avg_token_reduction": 0.0,
+            "token_reduction_by_mission": [],
+            "findings_by_severity": [
+                {"severity": "Critical", "count": 0},
+                {"severity": "High", "count": 0},
+                {"severity": "Medium", "count": 0},
+                {"severity": "Low", "count": 0},
+                {"severity": "Informational", "count": 0},
+            ],
+            "feature_distribution": [],
+            "mission_runtime_trend": []
+        }
+
     conn = get_connection()
     try:
         cursor = conn.cursor()
+        user_mids = [m.get("id") or m.get("mission_id") for m in missions if isinstance(m, dict)]
         
         # 1. Total counts (I7: include all findings)
-        missions = get_missions()
-        total_missions = len(missions)
-        
-        cursor.execute("SELECT count(*) FROM findings")
-        total_findings = cursor.fetchone()[0]
-        
-        # 2. Query reports
-        cursor.execute("SELECT mission_id, report_json FROM reports")
-        reports = cursor.fetchall()
+        if user and user_mids:
+            placeholders = ",".join(["?"] * len(user_mids))
+            cursor.execute(f"SELECT count(*) FROM findings WHERE mission_id IN ({placeholders})", user_mids)
+            total_findings = cursor.fetchone()[0]
+            cursor.execute(f"SELECT mission_id, report_json FROM reports WHERE mission_id IN ({placeholders})", user_mids)
+            reports = cursor.fetchall()
+        else:
+            cursor.execute("SELECT count(*) FROM findings")
+            total_findings = cursor.fetchone()[0]
+            cursor.execute("SELECT mission_id, report_json FROM reports")
+            reports = cursor.fetchall()
         
         runtimes_map = get_mission_runtimes_map()
         
@@ -93,7 +119,10 @@ def get_metrics_summary():
         
         # 3. Severity Distribution (I2 & I7: Critical, High, Medium, Low, Informational)
         severity_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Informational": 0}
-        cursor.execute("SELECT severity FROM findings")
+        if user and user_mids:
+            cursor.execute(f"SELECT severity FROM findings WHERE mission_id IN ({placeholders})", user_mids)
+        else:
+            cursor.execute("SELECT severity FROM findings")
         for row in cursor.fetchall():
             sev = (row["severity"] or "").capitalize()
             if sev in severity_counts:
@@ -109,7 +138,10 @@ def get_metrics_summary():
         
         # 4. Feature Distribution
         feature_counts = {}
-        cursor.execute("SELECT name FROM features")
+        if user and user_mids:
+            cursor.execute(f"SELECT name FROM features WHERE mission_id IN ({placeholders})", user_mids)
+        else:
+            cursor.execute("SELECT name FROM features")
         for row in cursor.fetchall():
             raw_name = (row["name"] or "").strip().lower()
             if raw_name == "unknown":

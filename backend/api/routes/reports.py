@@ -1,19 +1,32 @@
-from fastapi import APIRouter, HTTPException
-from typing import List, Dict, Any
+from fastapi import APIRouter, HTTPException, Header
+from typing import List, Dict, Any, Optional
 import json
 import logging
 from backend.models.finding import get_default_reasoning
 from backend.memory.sqlite.database import get_connection
+from backend.api.routes.auth import get_current_user_from_header
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/reports")
-def get_reports_list():
+def get_reports_list(authorization: Optional[str] = Header(None)):
+    user = get_current_user_from_header(authorization)
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT report_id, mission_id, target_url, generated_at FROM reports ORDER BY id DESC")
+        if user:
+            cursor.execute("SELECT mission_id FROM missions WHERE username = ?", (user["username"],))
+            user_mids = [r["mission_id"] for r in cursor.fetchall() if r["mission_id"]]
+            if not user_mids:
+                return []
+            placeholders = ",".join(["?"] * len(user_mids))
+            cursor.execute(
+                f"SELECT report_id, mission_id, target_url, generated_at FROM reports WHERE mission_id IN ({placeholders}) ORDER BY id DESC",
+                user_mids,
+            )
+        else:
+            cursor.execute("SELECT report_id, mission_id, target_url, generated_at FROM reports ORDER BY id DESC")
         rows = cursor.fetchall()
         
         reports = []

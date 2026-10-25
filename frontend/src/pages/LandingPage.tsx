@@ -339,9 +339,12 @@ export default function LandingPage() {
               </Link>
 
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  navigate("/");
+                }}
                 title="Sign Out"
-                className="p-2 rounded-xl text-[#64748B] hover:text-[#EF4444] hover:bg-[#1E293B] transition"
+                className="p-2 rounded-xl text-[#64748B] hover:text-[#EF4444] hover:bg-[#1E293B] transition cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>

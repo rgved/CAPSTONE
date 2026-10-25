@@ -8,7 +8,7 @@ import contextvars
 import re
 
 from backend.orchestrator.orchestrator import Orchestrator
-from backend.services.storage_service import current_mission_id, current_username
+from backend.services.storage_service import current_mission_id, current_username, save_mission
 from backend.memory.sqlite.database import get_connection
 from backend.api.routes.auth import get_current_user_from_header
 from backend.services.risk_scorer import prioritize_routes
@@ -133,6 +133,9 @@ def start_scan(payload: ScanRequest, background_tasks: BackgroundTasks, authoriz
     next_counter = max_counter + 1
     next_mission_id = f"MISSION-{next_counter:03d}"
     
+    # Save running mission with user ownership immediately
+    save_mission(next_mission_id, url, status="running", username=username)
+
     # Launch in background with configured max_pages (I8) and username
     pages = payload.max_pages or 5
     background_tasks.add_task(run_scan_background, url, next_mission_id, max_counter, pages, username)
@@ -151,12 +154,24 @@ def get_missions(authorization: Optional[str] = Header(None)):
         # I1: Read missions table as source of truth
         if username:
             cursor.execute(
-                "SELECT mission_id, target_url, status, started_at, finished_at, username FROM missions WHERE username = ? OR username IS NULL ORDER BY id DESC",
+                "SELECT mission_id, target_url, status, started_at, finished_at, username FROM missions WHERE username = ? ORDER BY id DESC",
                 (username,)
             )
+            db_missions = {row["mission_id"]: dict(row) for row in cursor.fetchall()}
+            all_ids = set(db_missions.keys())
         else:
             cursor.execute("SELECT mission_id, target_url, status, started_at, finished_at, username FROM missions ORDER BY id DESC")
-        db_missions = {row["mission_id"]: dict(row) for row in cursor.fetchall()}
+            db_missions = {row["mission_id"]: dict(row) for row in cursor.fetchall()}
+            cursor.execute("SELECT mission_id FROM reports")
+            rep_ids = {r["mission_id"] for r in cursor.fetchall() if r["mission_id"]}
+            cursor.execute("SELECT mission_id FROM tasks WHERE mission_id IS NOT NULL")
+            task_ids = {t["mission_id"] for t in cursor.fetchall() if t["mission_id"]}
+            cursor.execute("SELECT DISTINCT mission_id FROM routes WHERE mission_id IS NOT NULL")
+            route_ids = {row["mission_id"] for row in cursor.fetchall() if row["mission_id"]}
+            all_ids = set(db_missions.keys()).union(rep_ids).union(task_ids).union(route_ids)
+
+        if not all_ids:
+            return []
 
         # Get all reports
         cursor.execute("SELECT mission_id, target_url, generated_at, report_json FROM reports")
@@ -173,13 +188,6 @@ def get_missions(authorization: Optional[str] = Header(None)):
             if m_id not in missions_tasks:
                 missions_tasks[m_id] = []
             missions_tasks[m_id].append(t)
-
-        # Get all routes mission IDs
-        cursor.execute("SELECT DISTINCT mission_id FROM routes WHERE mission_id IS NOT NULL")
-        routes_mission_ids = [row["mission_id"] for row in cursor.fetchall() if row["mission_id"]]
-            
-        # Compile all unique mission IDs
-        all_ids = set(db_missions.keys()).union(reports_map.keys()).union(missions_tasks.keys()).union(routes_mission_ids)
         
         missions = []
         for m_id in sorted(all_ids, reverse=True):

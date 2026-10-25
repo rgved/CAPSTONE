@@ -29,6 +29,9 @@ GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_BASE_URL: str = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 GROQ_PROVIDER_NAME: str = "groq"
 
+# Google OAuth configuration
+GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+
 
 def validate_groq_config() -> None:
     """Fail fast when Groq configuration is incomplete."""

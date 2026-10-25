@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import { Shield, Target, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Header() {
+  const navigate = useNavigate();
   const { user, isAuthenticated, openAuthModal, logout } = useAuth();
   const { data } = useQuery({
     queryKey: ["dashboard"],
@@ -47,7 +49,10 @@ export default function Header() {
               <span className="text-xs font-mono text-[#E2E8F0]">@{user.username}</span>
             </div>
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
               title="Sign Out"
               className="p-1.5 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-[#1E293B] transition cursor-pointer"
             >

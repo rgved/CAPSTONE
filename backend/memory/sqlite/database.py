@@ -136,6 +136,9 @@ def init_db(db_path: Optional[str] = None) -> None:
         cursor = conn.cursor()
         # I1: missions table first — other tables reference mission_id
         cursor.execute(_CREATE_USERS)
+        _ensure_column(cursor, "users", "auth_provider", "TEXT NOT NULL DEFAULT 'local'")
+        _ensure_column(cursor, "users", "avatar_url", "TEXT")
+        _ensure_column(cursor, "users", "google_id", "TEXT")
         cursor.execute(_CREATE_MISSIONS)
         _ensure_column(cursor, "missions", "mission_id", "TEXT NOT NULL DEFAULT ''")
         _ensure_column(cursor, "missions", "target_url", "TEXT NOT NULL DEFAULT ''")
@@ -168,6 +171,7 @@ def init_db(db_path: Optional[str] = None) -> None:
         cursor.execute(_CREATE_TASKS)
         _ensure_column(cursor, "tasks", "mission_id", "TEXT")
         _ensure_column(cursor, "tasks", "target", "TEXT")
+        cursor.execute("UPDATE missions SET username = 'ria_parmar' WHERE (username IS NULL OR username = '') AND EXISTS (SELECT 1 FROM users WHERE username = 'ria_parmar' OR email = 'riaaparmar5812@gmail.com')")
         conn.commit()
         logger.info("Database initialised at: %s", db_path or DB_PATH)
     finally:

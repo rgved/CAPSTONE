@@ -35,6 +35,13 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
+    googleAuth: (data: { credential?: string; email?: string; name?: string; google_id?: string; avatar_url?: string }) =>
+      fetchJson(`${API_BASE}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }),
+    getGoogleConfig: () => fetchJson(`${API_BASE}/auth/google/config`),
     me: () => fetchJson(`${API_BASE}/auth/me`),
   },
 
